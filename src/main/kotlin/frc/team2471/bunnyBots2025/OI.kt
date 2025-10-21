@@ -85,7 +85,6 @@ object OI: SubsystemBase("OI") {
         driverController.back().onTrue({
                 println("zero gyro")
                 Drive.zeroGyro()
-                Vision.gyroReset()
             }.toCommand(Drive).ignoringDisable(true))
 
         // Reset Odometry Position
