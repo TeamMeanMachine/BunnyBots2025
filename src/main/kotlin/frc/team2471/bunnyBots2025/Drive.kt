@@ -20,9 +20,6 @@ import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.wpilibj.Timer
 import gg.questnav.questnav.QuestNav
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.ctre.PhoenixUtil
@@ -39,7 +36,6 @@ import org.team2471.frc.lib.util.isReal
 import org.team2471.frc.lib.util.isRedAlliance
 import org.team2471.frc.lib.vision.Fiducial
 import org.team2471.frc.lib.vision.QuixVisionCamera
-import org.team2471.frc.lib.vision.QuixVisionSim
 
 
 object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerConstants.moduleConfigs) {
@@ -235,15 +231,5 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
         println("resetting odometry to localizer pose")
         val localizerPose = localizer.pose
         pose = Pose2d(localizerPose.translation, pose.rotation)
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    override fun simulationPeriodic() {
-        LoopLogger.record("b4 Drive Sim piodic")
-        GlobalScope.launch {
-            updateSimState(0.02, 12.0)
-            QuixVisionSim.updatePose(pose)
-        }
-        LoopLogger.record("Drive Sim piodic")
     }
 }
