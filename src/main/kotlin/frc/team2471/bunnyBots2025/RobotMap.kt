@@ -24,6 +24,9 @@ object Falcons {
     const val BACK_LEFT_DRIVE = 24
     const val BACK_LEFT_STEER = 10
 
+    const val TURRET_0 = 45
+    const val TURRET_1 = 44
+
 }
 
 object Talons {
@@ -47,6 +50,8 @@ object CANivores {
 
 object CANSensors {
     const val PIGEON = 40
+
+    const val CANDI = 41
 }
 
 object I2CPort {

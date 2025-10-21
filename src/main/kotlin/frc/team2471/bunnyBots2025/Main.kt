@@ -69,12 +69,8 @@ object Robot : LoggedRobot() {
     // MUST define an individual variable for all subsystems inside this class or else @AutoLogOutput will not work -2025
     val drive = Drive
     val oi = OI
-    val armavator = Armavator
-    val intake = Intake
-    val vision = Vision
-    val climb = Climb
 
-    var allSubsystems = arrayOf(drive, oi, armavator, intake, vision, climb)
+    var allSubsystems = arrayOf(drive, oi)
 
     init {
         // Tells FRC we use Kotlin
@@ -151,7 +147,6 @@ object Robot : LoggedRobot() {
 //        enabledTimer.restart()
         println("Enabled init $timeSinceEnabled")
         Drive.brakeMode()
-        Vision.onEnable()
     }
 
     /** This function is called once when the robot is disabled.  */
@@ -159,16 +154,12 @@ object Robot : LoggedRobot() {
         Drive.coastMode()
         Autonomous.autonomousCommand?.cancel() // This makes sure that the autonomous stops running when teleop starts running.
         Autonomous.testCommand?.cancel()
-        Vision.onDisable()
     }
 
     /** This function is called periodically when disabled.  */
     override fun disabledPeriodic() {
         Autonomous.flipPathsIfAllianceChange()
         Autonomous.updateSelectedAuto()
-        Armavator.goToPose(Pose.current)
-        Intake.intakeState = IntakeState.HOLDING
-        Intake.afterDisabled = true
     }
 
     /** This function is called once when auto is enabled.  */
