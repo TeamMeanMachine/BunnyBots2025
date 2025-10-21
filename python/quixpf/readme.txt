@@ -1,0 +1,126 @@
+
+
+These are the packages that worked for me on Macos15.5 prob dont need this much -JK
+
+!! are the important ones I had to install myself and/or downgrade versions
+
+! means it wasn't the latest version at the time
+
+Python 3.11
+
+aiohappyeyeballs 2.6.1
+aiohttp 3.12.15 !
+aiosignal 1.4.0
+alembic 1.4.1 !
+attrs 25.3.0
+blinker 1.9.0
+certifi 2025.7.14 !
+cffi 1.17.1 !
+charset-normalizer 3.4.2
+click 8.2.1 !
+cloudpickle 3.1.1
+contourpy 1.3.3
+cryptography 45.0.5 !
+cycler 0.12.1
+databricks-cli 0.18.0
+docker 7.1.0
+ecasa 0.19.1
+entrypoints 0.4
+filelock 3.18.0
+Flask 3.1.1
+fonttools 4.59.0
+frozenlist 1.7.0
+fsspec2025.7.0
+gitdb 4.0.12
+GitPython 3.1.45
+gorilla 0.4.0
+gunicorn 23.0.0
+idna 3.10
+importlib_metadata 8.7.0
+itsdangerous 2.2.0
+Jinja2 3.1.6
+joblib 1.5.1
+jwcrypto 1.5.6
+kiwisolver 1.4.8
+lightning-utilities 0.15.0 !
+Mako 1.3.10
+MarkupSafe 3.0.2
+matplotlib 3.7.0 !!
+miflow 1.21.0 !
+mpmath 1.3.0 !
+multidict 6.6.3
+networkx 3.5
+nicore 0.0.1 !!
+numpy 1.26.4 !!
+numpy-stl 3.2.0
+oauthlib 3.3.1
+opencv-python 4.12.0.88 !!
+packaging 25.0
+pandas 2.3.1
+pillow 11.3.0
+pip 25.2
+plotter 1.3.20 !!
+prometheus_client 0.22.1
+prometheus_flask_exporter 0.23.2
+propcache 0.3.2
+protobuf 6.31.1 !
+psutil 7.0.0
+pyasn1 0.6.1
+pycparser 2.22
+PyJWT 2.10.1
+pynetworktables 2021.0.0
+pyntcore 2025.3.2.3 !
+PyOpenGL 3.1.9
+pyparsing 3.2.3
+PyQt5 5.15.11 !!
+PyQt5-Qt5 5.15.17 !!
+PyQt5_sip 12.17.0 !!
+(my other computer needed PyQt6) !!
+pyqtgraph 0.13.7 !!
+python-dateutil 2.9.0.posto
+python-editor 1.0.4
+python-jose 3.5.0
+python-utils 3.9.1
+pytorch-lightning 2.5.2
+pytz 2025.2
+PyYAML 6.0.2
+querystring-parser 1.2.4
+requests 2.32.4
+requests-futures 1.0.2
+requests-toolbelt 1.0.0
+robotpy-cli 2024.0.0
+robotpy-hal 2025.3.2.3 !
+robotpy-native-ntcore 2025.3.2 !
+robotpy-native-wpihal 2025.3.2 !
+robotpy-native-wpilib 2025.3.2 !
+robotpy-native-wpimath 2025.3.2 !
+robotpy-native-wpinet 2025.3.2 !
+robotpy-native-wpiutil 2025.3.2 !
+robotpy-wpimath 2025.3.2.3 !
+robotpy-wpinet 2025.3.2.3 !
+robotpy-wpiutil 2025.3.2.3 !
+rsa 4.9.1
+scikit-learn 1.7.1
+scipy 1.16.1
+setuptools 80.9.0
+six 1.17.0
+smmap 5.0.2 6.0.0
+SQLAlchemy 2.0.42
+sqlparse 0.5.3
+sympy 1.14.0
+tabulate 0.9.0
+threadpoolctl 3.6.0
+tikzplotlib 0.10.1 !!
+torch 2.7.1
+torchmetrics 1.8.0
+tqdm 4.67.1
+transformations 2025.1.1 2025.8.1
+typing_extensions 4.14.1
+tzdata 2025.2
+urllib3 2.5.0
+webcolors 24.11.1
+Werkzeug 3.1.3
+wheel 0.45.1 !
+wpilib 2025.3.2.3 !
+yarl 1.20.1
+zipp 3.23.0
