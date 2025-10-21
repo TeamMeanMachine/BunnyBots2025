@@ -101,20 +101,4 @@ object FieldManager {
      */
     fun Pose2d.onOpposingAllianceSide() = !this.onFriendlyAllianceSide()
 
-
-
-    enum class Level {
-        L1,
-        L2,
-        L3,
-        L4,
-    }
-    enum class ScoringSide {
-        LEFT,
-        RIGHT
-    }
-    enum class AlgaeLevel {
-        LOW,
-        HIGH
-    }
 }
