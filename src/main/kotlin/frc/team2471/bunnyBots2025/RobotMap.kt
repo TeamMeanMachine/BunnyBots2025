@@ -26,7 +26,8 @@ object Falcons {
 
     const val TURRET_0 = 45
     const val TURRET_1 = 44
-
+    const val INTAKE_DEPLOY = 30
+    const val INTAKE_FRONT = 31
 }
 
 object Talons {
