@@ -27,6 +27,8 @@ object Falcons {
     const val TURRET_0 = 45
     const val TURRET_1 = 44
 
+    const val PIVOT = 43
+
 }
 
 object Talons {
@@ -37,6 +39,8 @@ object CANCoders {
     const val FRONT_LEFT = 25
     const val BACK_RIGHT = 28
     const val BACK_LEFT = 27
+
+    const val PIVOT = 30
 }
 
 object PWMPort {

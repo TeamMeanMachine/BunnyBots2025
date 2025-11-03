@@ -49,14 +49,14 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
 
     // Buffer of poses so we can get the interpolated pose at the time of a vision measurement.
     private val bufferHistorySeconds = 10.0
-    // Buffer of only the swerve odometry pose.
-    private val odometryPoseBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
-    // Buffer of swerve odometry, Quest, and single tag pose.
-    private val singleTagOdometryBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
-    // Buffer of the swerve odometry, Quest, and vision measurements.
-    private val visionOdometryBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
+    /** Buffer of only the swerve odometry pose. */
+    val odometryPoseBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
+    /** Buffer of swerve odometry, Quest, and single tag pose. */
+    val singleTagOdometryBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
+    /** Buffer of the swerve odometry, Quest, and vision measurements. */
+    val visionOdometryBuffer = TimeInterpolatableBuffer.createBuffer<Pose2d>(bufferHistorySeconds)
 
-    // Buffer of chassis speeds so we can get the interpolated chassis speed at the time of a vision measurement.
+    /** Buffer of chassis speeds so we can get the interpolated chassis speed at the time of a vision measurement. */
     private val chassisSpeedsBuffer = TimeInterpolatableBuffer.createBuffer<InterpolatableChassisSpeeds>(bufferHistorySeconds)
 
 
