@@ -1,36 +1,56 @@
 package frc.team2471.bunnyBots2025
 
+import edu.wpi.first.math.VecBuilder
+import edu.wpi.first.math.controller.PIDController
+import edu.wpi.first.math.filter.MedianFilter
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.geometry.Translation3d
-import edu.wpi.first.wpilibj.Timer
+import edu.wpi.first.math.kinematics.ChassisSpeeds
+import edu.wpi.first.units.measure.Angle
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
-import org.team2471.frc.lib.ctre.PhoenixUtil
-import org.team2471.frc.lib.units.inches
+import org.team2471.frc.lib.control.commands.finallyRun
+import org.team2471.frc.lib.control.commands.runCommand
+import org.team2471.frc.lib.units.asDegrees
+import org.team2471.frc.lib.units.degrees
+import org.team2471.frc.lib.units.radians
+import org.team2471.frc.lib.vision.limelight.LimelightMode
 import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
+import org.littletonrobotics.junction.Logger
+import kotlin.math.absoluteValue
+import kotlin.math.atan2
+import kotlin.math.sign
 
-object Vision: SubsystemBase("Vision") {
-    val io = VisionIOLimelight("limelight-front") { Drive.heading.measure }
-    val inputs = VisionIO.VisionIOInputs()
+object Vision : SubsystemBase() {
+    val io: Array<VisionIO> = arrayOf(
+        VisionIOLimelight("limelight") { Turret.turretEncoderFieldCentricAngle },
+    )
 
-    val cameraTranslation = Translation3d(0.0, 0.0, 1.0)
-    val goalTagHeight = 43.875.inches
-    /*
-    only uses delta turret angle, delta odometry, tx, and tag size to predict and calculate goal pose
-     */
-    val predictedRobotRelativeGoalPose = Translation2d(0.0, 0.0)
-
-    init {
-
-    }
+    val inputs = Array(io.size) { VisionIO.VisionIOInputs() }
+    var rawAprilTagPose = Pose2d()
 
     override fun periodic() {
-        io.updateInputs(inputs)
+        for (i in io.indices) {
+            io[i].updateInputs(inputs[i])
 
-        val measurementTimestamp = PhoenixUtil.currentToFpgaTime(inputs.aprilTagTimestamp)
-        if (inputs.isConnected && inputs.hasTargets && measurementTimestamp - Timer.getTimestamp() < 10.0) {
+            if (inputs[i].aprilTagPoseEstimate != Pose2d()) {
+                rawAprilTagPose = inputs[i].aprilTagPoseEstimate
+                Drive.addVisionMeasurement(rawAprilTagPose, inputs[i].aprilTagTimestamp, VecBuilder.fill(0.01, 0.01, 1000000000.0))
+            }
 
         }
-
     }
+
+    fun gyroReset() {
+        io.forEach { it.gyroReset() }
+    }
+
+    fun onEnable() = io.forEach { it.enable() }
+
+    fun onDisable() = io.forEach { it.disable() }
+
+
+
 }
