@@ -69,6 +69,7 @@ object Robot : LoggedRobot() {
     // MUST define an individual variable for all subsystems inside this class or else @AutoLogOutput will not work -2025
     val drive = Drive
     val oi = OI
+    val shooter = Shooter
 
     var allSubsystems = arrayOf(drive, oi)
 

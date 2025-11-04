@@ -31,6 +31,8 @@ object Falcons {
 
     const val PIVOT = 43
 
+    const val SHOOTER_RIGHT = 18
+    const val SHOOTER_LEFT = 19
 }
 
 object Talons {
