@@ -33,6 +33,9 @@ object Falcons {
 
     const val INDEXER = 99
     const val CENTERING = 98
+
+    const val SHOOTER_RIGHT = 18
+    const val SHOOTER_LEFT = 19
 }
 
 object Talons {
