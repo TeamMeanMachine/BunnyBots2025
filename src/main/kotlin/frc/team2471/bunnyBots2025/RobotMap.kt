@@ -31,6 +31,8 @@ object Falcons {
 
     const val PIVOT = 43
 
+    const val INDEXER = 99
+    const val CENTERING = 98
 }
 
 object Talons {
@@ -58,6 +60,8 @@ object CANSensors {
     const val PIGEON = 40
 
     const val CANDI = 41
+
+    const val CENTERING_CAN_RANGE = 97
 }
 
 object I2CPort {

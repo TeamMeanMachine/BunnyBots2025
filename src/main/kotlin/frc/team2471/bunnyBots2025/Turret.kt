@@ -4,8 +4,6 @@ import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
-import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
@@ -20,13 +18,11 @@ import org.team2471.frc.lib.ctre.coastMode
 import org.team2471.frc.lib.ctre.currentLimits
 import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.magnetSensorOffset
-import org.team2471.frc.lib.ctre.p
 import org.team2471.frc.lib.ctre.remoteCANCoder
 import org.team2471.frc.lib.units.asDegrees
 import org.team2471.frc.lib.units.asRadians
 import org.team2471.frc.lib.units.asRotations
 import org.team2471.frc.lib.units.degrees
-import org.team2471.frc.lib.units.radians
 import org.team2471.frc.lib.units.rotations
 import org.team2471.frc.lib.units.unWrap
 import org.team2471.frc.lib.units.wrap
