@@ -409,21 +409,21 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
 
     fun determineClosestTagID(robotPose: Pose2d, isBlue: Boolean): Int {
         // Define tag indices
-        val tagIndices = if (isBlue) intArrayOf(16, 17, 18, 19, 20, 21) else intArrayOf(5, 6, 7, 8, 9, 10)
+        val targetedTags = allTargets
 
         // Evaluate each canidate
-        var closestTagIndex = 0 // Is this the right initial value?
+        var closestTagID = 0 // Is this the right initial value?
         var closestTagDist = Double.POSITIVE_INFINITY
-        for (tagIndex in tagIndices) {
-            val tag: Pose2d = allTargets[tagIndex].pose.toPose2d()
+        targetedTags.forEach {
+            val tag: Pose2d = it.pose.toPose2d()
             val tagDist: Double = tag.translation.getDistance(robotPose.translation)
 
             if (tagDist < closestTagDist) {
-                closestTagIndex = tagIndex
+                closestTagID = it.id
                 closestTagDist = tagDist
             }
         }
-        return closestTagIndex + 1
+        return closestTagID
     }
 
     init {

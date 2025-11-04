@@ -1,9 +1,10 @@
 package frc.team2471.bunnyBots2025
 
+import edu.wpi.first.apriltag.AprilTag
 import edu.wpi.first.apriltag.AprilTagFieldLayout
-import edu.wpi.first.apriltag.AprilTagFields
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.wpilibj.Filesystem
 import org.team2471.frc.lib.units.asMeters
 import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
@@ -13,7 +14,7 @@ import org.team2471.frc.lib.units.wrap
 import org.team2471.frc.lib.util.isRedAlliance
 
 object FieldManager {
-    val aprilTagFieldLayout: AprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded)
+    val aprilTagFieldLayout: AprilTagFieldLayout = AprilTagFieldLayout(Filesystem.getDeployDirectory().path + "/2025-bunnybots.json")
     val allAprilTags = aprilTagFieldLayout.tags
 
     val fieldWidth = aprilTagFieldLayout.fieldWidth.meters
@@ -25,6 +26,21 @@ object FieldManager {
     val fieldHalfLength = fieldLength / 2.0
 
     val fieldCenter = fieldDimensions / 2.0
+
+
+    val blueGoalTags = allAprilTags.filter { it.ID in listOf(1, 2, 3, 4) }
+    val redGoalTags = allAprilTags.filter { it.ID in listOf(5, 6, 7, 8) }
+    val goalTags: List<AprilTag>
+        get() = if (isRedAlliance) redGoalTags else blueGoalTags
+
+    val blueGoalPose = (allAprilTags[0].pose.toPose2d().translation + allAprilTags[2].pose.toPose2d().translation) / 2.0
+    val redGoalPose = (allAprilTags[4].pose.toPose2d().translation + allAprilTags[6].pose.toPose2d().translation) / 2.0
+    val goalPose: Translation2d
+        get() = if (isRedAlliance) redGoalPose else blueGoalPose
+
+    init {
+        println("FieldManager init. Field dimensions: $fieldDimensions. ${allAprilTags.size} tags.")
+    }
 
 
     /**

@@ -73,7 +73,7 @@ object Robot : LoggedRobot() {
     val intake = Intake
     val turret = Turret
 
-    var allSubsystems = arrayOf(drive, turret, intake, Shooter, oi)
+    var allSubsystems = arrayOf(drive, turret, intake, shooter, oi)
 
     init {
         // Tells FRC we use Kotlin
