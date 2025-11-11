@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.interpolation.TimeInterpolatableBuffer
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.wpilibj.DriverStation
-import edu.wpi.first.wpilibj.DriverStation.Alliance
 import edu.wpi.first.wpilibj.Timer
 import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.util.isSim
@@ -46,6 +45,7 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
 
     // If empty, uses all tags.
     private val tagsToTrack = HashSet<Int>()
+    private val singleTagTagsToTrack = HashSet<Fiducial>()
 
     // Buffer of poses so we can get the interpolated pose at the time of a vision measurement.
     private val bufferHistorySeconds = 10.0
@@ -335,7 +335,7 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
             return
         }
 
-        val tagID = determineClosestTagID(this.pose, DriverStation.getAlliance().get() == Alliance.Blue)
+        val tagID = determineClosestTagID(this.pose)
 
         // Get latest measurement from either camera with a target.
         var latestTimestamp = 0.0
@@ -407,9 +407,9 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
         Logger.recordOutput("Localizer/DetectedSingleTag", *arrayOf(tagPose2d.translation))
     }
 
-    fun determineClosestTagID(robotPose: Pose2d, isBlue: Boolean): Int {
+    fun determineClosestTagID(robotPose: Pose2d): Int {
         // Define tag indices
-        val targetedTags = allTargets
+        val targetedTags = singleTagTagsToTrack
 
         // Evaluate each canidate
         var closestTagID = 0 // Is this the right initial value?
@@ -436,6 +436,7 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
         networkTable.publishTargets(allTargets)
 
         trackAllTags()
+        setSingleTagTagsToTrack(*allTargets)
     }
 
     fun trackAllTags() {
@@ -443,6 +444,11 @@ class PoseLocalizer(val allTargets: Array<Fiducial>, val cameras: List<QuixVisio
         for (tag in allTargets) {
             tagsToTrack.add(tag.id)
         }
+    }
+
+    fun setSingleTagTagsToTrack(vararg tags: Fiducial) {
+        singleTagTagsToTrack.clear()
+        singleTagTagsToTrack.addAll(tags)
     }
 
     data class OdometryMeasurement(val robotPose: Pose2d, val dataTimestamp: Double)

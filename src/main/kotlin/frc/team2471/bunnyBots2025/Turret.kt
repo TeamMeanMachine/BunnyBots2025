@@ -9,19 +9,19 @@ import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
-import org.littletonrobotics.junction.Logger
+import org.littletonrobotics.junction.AutoLogOutput
 import org.team2471.frc.lib.control.commands.runCommand
+import org.team2471.frc.lib.ctre.PhoenixUtil
 import org.team2471.frc.lib.ctre.addFollower
 import org.team2471.frc.lib.ctre.applyConfiguration
-import org.team2471.frc.lib.ctre.brakeMode
 import org.team2471.frc.lib.ctre.coastMode
 import org.team2471.frc.lib.ctre.currentLimits
 import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.magnetSensorOffset
 import org.team2471.frc.lib.ctre.remoteCANCoder
-import org.team2471.frc.lib.units.asDegrees
 import org.team2471.frc.lib.units.asRadians
 import org.team2471.frc.lib.units.asRotations
+import org.team2471.frc.lib.units.cos
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.rotations
 import org.team2471.frc.lib.units.unWrap
@@ -53,6 +53,7 @@ object Turret: SubsystemBase("Turret") {
     val pivotEncoder = CANcoder(CANCoders.PIVOT)
 
 
+    @get:AutoLogOutput(key = "Turret/rawLampreyAngle")
     val rawLampreyAngle: Angle
         get() = candi.pwM1Position.valueAsDouble.IEEErem(1.0).rotations.wrap()
 
@@ -62,44 +63,61 @@ object Turret: SubsystemBase("Turret") {
     var lampreyEncoderOffset: Double = turretEncoderOffsetEntry.getDouble(defaultTurretEncoderOffset)
     val pivotEncoderOffset: Double = pivotEncoderOffsetEntry.getDouble(defaultPivotEncoderOffset)
 
+    @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
     val unCorrectedLampreyAngle: Angle
         get() = (rawLampreyAngle - lampreyEncoderOffset.degrees)
 
+    @get:AutoLogOutput(key = "Turret/lampreyAlignmentOffset")
     val lampreyAlignmentOffset: Angle
         get() = abs((sin(unCorrectedLampreyAngle.asRadians) * 0.0)).degrees
 
+    @get:AutoLogOutput(key = "Turret/turretEncoderAngle")
     val turretEncoderAngle: Angle
         get() = (unCorrectedLampreyAngle - lampreyAlignmentOffset)
+    @get:AutoLogOutput(key = "Turret/turretEncoderFieldCentricAngle")
     val turretEncoderFieldCentricAngle: Angle
         get() = turretEncoderAngle + Drive.heading.measure
 
+    @get:AutoLogOutput(key = "Turret/turretMotorAngle")
     val turretMotorAngle: Angle
         get() = turretMotor.position.valueAsDouble.rotations
+    @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
         get() = turretMotorAngle + Drive.heading.measure
 
+    @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
         get() = pivotMotor.position.valueAsDouble.rotations
 
+    @get:AutoLogOutput(key = "Turret/turretFeedforward")
     val turretFeedforward: Double
         get() = 0.0//Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 0.01
 
+    @get:AutoLogOutput(key = "Turret/turretSetpoint")
     var turretSetpoint: Angle = turretMotorAngle
         set(value) {
             field = value.unWrap(turretMotorAngle)
             turretMotor.setControl(PositionVoltage(field.asRotations))
         }
+    @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle
         get() = turretSetpoint - Drive.heading.measure
         set(value) {
             turretSetpoint = value + Drive.heading.measure
         }
 
+    @get:AutoLogOutput(key = "Turret/pivotSetpoint")
     var pivotSetpoint: Angle = pivotAngle
         set(value) {
             field = value.coerceIn(0.0.degrees, 90.0.degrees)
-            pivotMotor.setControl(PositionVoltage(field.asRotations))
+            pivotMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(pivotFeedForward))
         }
+    @get:AutoLogOutput(key = "Turret/pivotSetpoint")
+    val pivotFeedForward: Double
+        get() = pivotAngle.cos() * 0.0
+
+    var pivotPeriodicFeedforward: Boolean = true
+    var turretPeriodicFeedforward: Boolean = true
 
 
     init {
@@ -115,10 +133,9 @@ object Turret: SubsystemBase("Turret") {
             magnetSensorOffset(pivotEncoderOffset)
         }
         pivotMotor.applyConfiguration {
-
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
-            brakeMode()
+            coastMode()
             remoteCANCoder(pivotEncoder, 1.0)
         }
 
@@ -126,25 +143,26 @@ object Turret: SubsystemBase("Turret") {
     }
 
     override fun periodic() {
-        Logger.recordOutput("Turret/lampreyAlignmentOffset", lampreyAlignmentOffset.asDegrees)
-        Logger.recordOutput("Turret/rawLampreyAngle", rawLampreyAngle.asDegrees)
-        Logger.recordOutput("Turret/unCorrectedLampreyAngle", unCorrectedLampreyAngle.asDegrees)
-        Logger.recordOutput("Turret/turretEncoderAngle", turretEncoderAngle.asDegrees)
-        Logger.recordOutput("Turret/turretEncoderFieldCentricAngle", turretEncoderFieldCentricAngle.asDegrees)
-        Logger.recordOutput("Turret/turretMotorAngle", turretMotorAngle.asDegrees)
-        Logger.recordOutput("Turret/turretMotorFieldCentricAngle", turretMotorFieldCentricAngle.asDegrees)
-
+        // Are the motors running position control loops? Update the custom feedforward
+        if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+            turretSetpoint = turretSetpoint
+        }
+        if (pivotMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+            pivotSetpoint = pivotSetpoint
+        }
     }
 
 
     fun aimFieldCentricWithJoystick(): Command = runCommand {
         val joystickTranslation = Translation2d(OI.driverController.rightY, OI.driverController.rightX)
-        val wantedAngle = joystickTranslation.angle.measure
-        turretFieldCentricSetpoint = wantedAngle
+        if (joystickTranslation.norm > 0.5) {
+            val wantedAngle = joystickTranslation.angle.measure - Drive.heading.measure
+            turretFieldCentricSetpoint = wantedAngle
+        }
     }
 
     fun aimAtGoal(): Command = runCommand {
-        turretSetpoint = unCorrectedLampreyAngle
+        turretSetpoint = 0.0.degrees
     }
 
 }
