@@ -18,6 +18,7 @@ import org.team2471.frc.lib.ctre.coastMode
 import org.team2471.frc.lib.ctre.currentLimits
 import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.magnetSensorOffset
+import org.team2471.frc.lib.ctre.motionMagic
 import org.team2471.frc.lib.ctre.remoteCANCoder
 import org.team2471.frc.lib.units.asRadians
 import org.team2471.frc.lib.units.asRotations
@@ -125,6 +126,8 @@ object Turret: SubsystemBase("Turret") {
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
             coastMode()
+            Feedback.RotorToSensorRatio = 10.0 / 233.0
+            motionMagic(1.2, 6.2)
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
@@ -136,7 +139,7 @@ object Turret: SubsystemBase("Turret") {
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
             coastMode()
-            remoteCANCoder(pivotEncoder, 1.0)
+            remoteCANCoder(pivotEncoder, 216.0)
         }
 
         turretMotor.setPosition(turretEncoderAngle.asRotations)
