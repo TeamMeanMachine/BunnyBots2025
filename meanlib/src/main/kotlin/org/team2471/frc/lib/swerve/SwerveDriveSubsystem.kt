@@ -408,7 +408,7 @@ abstract class SwerveDriveSubsystem(
             ApplyFieldSpeeds().apply{
                 Speeds = speeds
                 DriveRequestType = SwerveModule.DriveRequestType.Velocity
-            }
+            }//.withCenterOfRotation(Translation2d(-5.0.inches.asMeters, 0.0))
         )
     }
 
@@ -498,6 +498,16 @@ abstract class SwerveDriveSubsystem(
         return run {
             //get chassis speeds and send it
             driveVelocity(getChassisSpeedsFromJoystick())
+        }
+    }
+
+    /**
+     * Drives the robot using the joystick. [getChassisSpeedsFromJoystick]
+     */
+    fun joystickOnlyTranslationDrive(): Command {
+        return run {
+            //get chassis speeds and send it
+            driveVelocity(getChassisSpeedsFromJoystick().apply { omegaRadiansPerSecond = 0.0 })
         }
     }
 

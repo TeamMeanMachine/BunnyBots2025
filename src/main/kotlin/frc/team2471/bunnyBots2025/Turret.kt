@@ -1,9 +1,11 @@
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.controls.MotionMagicVoltage
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
@@ -19,7 +21,10 @@ import org.team2471.frc.lib.ctre.currentLimits
 import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.magnetSensorOffset
 import org.team2471.frc.lib.ctre.motionMagic
+import org.team2471.frc.lib.ctre.p
 import org.team2471.frc.lib.ctre.remoteCANCoder
+import org.team2471.frc.lib.ctre.s
+import org.team2471.frc.lib.units.asDegrees
 import org.team2471.frc.lib.units.asRadians
 import org.team2471.frc.lib.units.asRotations
 import org.team2471.frc.lib.units.cos
@@ -98,7 +103,7 @@ object Turret: SubsystemBase("Turret") {
     var turretSetpoint: Angle = turretMotorAngle
         set(value) {
             field = value.unWrap(turretMotorAngle)
-            turretMotor.setControl(PositionVoltage(field.asRotations))
+            turretMotor.setControl(MotionMagicVoltage(field.asRotations))
         }
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle
@@ -126,7 +131,12 @@ object Turret: SubsystemBase("Turret") {
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
             coastMode()
-            Feedback.RotorToSensorRatio = 10.0 / 233.0
+            s(0.12, StaticFeedforwardSignValue.UseVelocitySign)
+            p(50.0)
+
+
+
+            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
             motionMagic(1.2, 6.2)
         }
         turretMotor.addFollower(Falcons.TURRET_1)
@@ -142,13 +152,14 @@ object Turret: SubsystemBase("Turret") {
             remoteCANCoder(pivotEncoder, 216.0)
         }
 
-        turretMotor.setPosition(turretEncoderAngle.asRotations)
+        turretMotor.setPosition(0.0)
     }
 
     override fun periodic() {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
-            turretSetpoint = turretSetpoint
+            println("running ff")
+            turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
         if (pivotMotor.controlMode.value in PhoenixUtil.positionControlModes) {
             pivotSetpoint = pivotSetpoint
@@ -157,15 +168,16 @@ object Turret: SubsystemBase("Turret") {
 
 
     fun aimFieldCentricWithJoystick(): Command = runCommand {
-        val joystickTranslation = Translation2d(OI.driverController.rightY, OI.driverController.rightX)
-        if (joystickTranslation.norm > 0.5) {
+        val joystickTranslation = Translation2d(-OI.driverController.rightY, OI.driverController.rightX)
+        if (joystickTranslation.norm > 0.25) {
             val wantedAngle = joystickTranslation.angle.measure - Drive.heading.measure
+            println("wantedAngle: ${wantedAngle.asDegrees}")
             turretFieldCentricSetpoint = wantedAngle
         }
     }
 
     fun aimAtGoal(): Command = runCommand {
-        turretSetpoint = 0.0.degrees
+        turretFieldCentricSetpoint = 0.0.degrees
     }
 
 }

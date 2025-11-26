@@ -20,7 +20,8 @@ object Intake: SubsystemBase("Intake") {
     val deployMotor = TalonFX(Falcons.INTAKE_DEPLOY)
     val frontMotor = TalonFX(Falcons.INTAKE_FRONT)
 
-    val centeringMotor = TalonFX(Falcons.CENTERING)
+    val centeringMotorRight = TalonFX(Falcons.CENTERING_RIGHT)
+    val centeringMotorLeft = TalonFX(Falcons.CENTERING_LEFT)
     val indexerMotor = TalonFX(Falcons.INDEXER)
 
     val canRange = CANrange(CANSensors.CENTERING_CAN_RANGE)
@@ -50,7 +51,11 @@ object Intake: SubsystemBase("Intake") {
             currentLimits(10.0,20.0,1.0)
             coastMode()
         }
-        centeringMotor.applyConfiguration {
+        centeringMotorLeft.applyConfiguration {
+            currentLimits(20.0,30.0,1.0)
+            coastMode()
+        }
+        centeringMotorRight.applyConfiguration {
             currentLimits(20.0,30.0,1.0)
             coastMode()
         }
@@ -76,9 +81,9 @@ object Intake: SubsystemBase("Intake") {
                 frontMotor.setControl(DutyCycleOut(INTAKE_POWER))
 
                 if (pieceInCenteringThing) {
-                    centeringMotor.setControl(DutyCycleOut(0.0))
+                    centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 } else {
-                    centeringMotor.setControl(DutyCycleOut(CENTERING_POWER))
+                    centeringMotorLeft.setControl(DutyCycleOut(CENTERING_POWER))
                 }
 
                 indexerMotor.setControl(DutyCycleOut(0.0))
@@ -86,25 +91,25 @@ object Intake: SubsystemBase("Intake") {
 
             State.HOLDING -> {
                 frontMotor.setControl(DutyCycleOut(0.0))
-                centeringMotor.setControl(DutyCycleOut(0.0))
+                centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 indexerMotor.setControl(DutyCycleOut(0.0))
             }
 
             State.REVERSING -> {
                 frontMotor.setControl(DutyCycleOut(-INTAKE_POWER))
-                centeringMotor.setControl(DutyCycleOut(-CENTERING_POWER))
+                centeringMotorLeft.setControl(DutyCycleOut(-CENTERING_POWER))
                 indexerMotor.setControl(DutyCycleOut(-INDEXING_POWER))
             }
 
             State.SHOOTING -> {
                 frontMotor.setControl(DutyCycleOut(INTAKE_POWER))
-                centeringMotor.setControl(DutyCycleOut(CENTERING_POWER))
+                centeringMotorLeft.setControl(DutyCycleOut(CENTERING_POWER))
                 indexerMotor.setControl(DutyCycleOut(INDEXING_POWER))
             }
 
             State.BULLDOZING -> {
                 frontMotor.setControl(DutyCycleOut(BULLDOZING_POWER))
-                centeringMotor.setControl(DutyCycleOut(0.0))
+                centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 indexerMotor.setControl(DutyCycleOut(0.0))
             }
         }

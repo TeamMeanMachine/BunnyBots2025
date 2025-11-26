@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.Alert
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
+import org.team2471.frc.lib.control.commands.parallelCommand
 import org.team2471.frc.lib.control.commands.toCommand
 import org.team2471.frc.lib.math.deadband
 import org.team2471.frc.lib.math.normalize
@@ -91,6 +92,15 @@ object OI: SubsystemBase("OI") {
         driverController.start().onTrue( {
             Drive.pose = Pose2d(Translation2d(3.0, 3.0), Drive.heading)
         }.toCommand(Drive).ignoringDisable(true))
+
+        driverController.leftTrigger(0.5).whileTrue(
+            parallelCommand(
+                Drive.joystickOnlyTranslationDrive(),
+                Turret.aimFieldCentricWithJoystick()
+            )
+        )
+
+        driverController.a().whileTrue(Turret.aimAtGoal())
 
 //        driverController.start().onTrue(runOnce { Drive.resetOdometryToAbsolute() })
     }
