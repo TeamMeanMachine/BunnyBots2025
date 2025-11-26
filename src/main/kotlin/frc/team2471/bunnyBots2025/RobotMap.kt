@@ -29,14 +29,18 @@ object Falcons {
     const val INTAKE_DEPLOY = 28
     const val INTAKE_FRONT = 9
 
-    const val PIVOT = 43
+    const val PIVOT = 18
 
     const val INDEXER = 7
     const val CENTERING_LEFT = 25
     const val CENTERING_RIGHT = 1
 
-    const val SHOOTER_RIGHT = 21
-    const val SHOOTER_LEFT = 19
+    const val SHOOTER_FEEDER = 19
+
+    const val CYCLONE = 5
+
+    const val SHOOTER_RIGHT = 2
+    const val SHOOTER_LEFT = 15
 }
 
 object Talons {
@@ -48,7 +52,7 @@ object CANCoders {
     const val BACK_RIGHT = 26
     const val BACK_LEFT = 28
 
-    const val PIVOT = 30
+    const val PIVOT = 1
 }
 
 object PWMPort {
@@ -58,12 +62,13 @@ object ServoPort {
 }
 
 object CANivores {
+    const val TURRET_CAN = "Kenivore"
 }
 
 object CANSensors {
     const val PIGEON = 2
 
-    const val CANDI = 41
+    const val CANDI = 30
 
     const val CENTERING_CAN_RANGE = 21
 }
