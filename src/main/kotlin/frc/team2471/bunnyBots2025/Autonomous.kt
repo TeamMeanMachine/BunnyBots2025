@@ -14,6 +14,7 @@ import frc.team2471.bunnyBots2025.tests.joystickTest
 import frc.team2471.bunnyBots2025.tests.leftRightStaticFFTest
 import frc.team2471.bunnyBots2025.tests.slipCurrentTest
 import frc.team2471.bunnyBots2025.tests.velocityVoltTest
+import frc.team2471.bunnyBots2025.tests.zeroPivot
 import org.team2471.frc.lib.units.asSeconds
 import org.team2471.frc.lib.math.round
 import org.team2471.frc.lib.control.commands.toCommand
@@ -43,6 +44,7 @@ object Autonomous {
         addOption("Drive Slip Current Test", Drive.slipCurrentTest())
         addOption("Drive L/R Static FF Test", Drive.leftRightStaticFFTest())
         addOption("Drive Velocity Volt Test", Drive.velocityVoltTest())
+        addOption("Zero Pivot", zeroPivot())
     }
 
     var selectedAuto: AutoCommand? = null

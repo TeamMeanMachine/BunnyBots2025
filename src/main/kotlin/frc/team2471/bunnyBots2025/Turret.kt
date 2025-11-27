@@ -1,6 +1,8 @@
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.controls.MotionMagicDutyCycle
 import com.ctre.phoenix6.controls.MotionMagicVoltage
+import com.ctre.phoenix6.controls.PositionDutyCycle
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
@@ -54,9 +56,9 @@ object Turret: SubsystemBase("Turret") {
 
 
     val turretMotor = TalonFX(Falcons.TURRET_0)
-    val pivotMotor = TalonFX(Falcons.PIVOT)
-    val candi = CANdi(CANSensors.CANDI)
-    val pivotEncoder = CANcoder(CANCoders.PIVOT)
+    val pivotMotor = TalonFX(Falcons.PIVOT, CANivores.TURRET_CAN)
+    val candi = CANdi(CANSensors.CANDI, CANivores.TURRET_CAN)
+    val pivotEncoder = CANcoder(CANCoders.PIVOT, CANivores.TURRET_CAN)
 
 
     @get:AutoLogOutput(key = "Turret/rawLampreyAngle")
@@ -112,13 +114,16 @@ object Turret: SubsystemBase("Turret") {
             turretSetpoint = value + Drive.heading.measure
         }
 
+    @get:AutoLogOutput(key = "Turret/pivotEncoderAngle")
+    val pivotEncoderAngle get() = pivotEncoder.position.valueAsDouble.rotations
+
     @get:AutoLogOutput(key = "Turret/pivotSetpoint")
     var pivotSetpoint: Angle = pivotAngle
         set(value) {
-            field = value.coerceIn(0.0.degrees, 90.0.degrees)
-            pivotMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(pivotFeedForward))
+            field = value.coerceIn(0.0.degrees, 45.0.degrees)
+            pivotMotor.setControl(PositionDutyCycle(field.asRotations).withFeedForward(pivotFeedForward))
         }
-    @get:AutoLogOutput(key = "Turret/pivotSetpoint")
+    @get:AutoLogOutput(key = "Turret/pivotFeedForward")
     val pivotFeedForward: Double
         get() = pivotAngle.cos() * 0.0
 
@@ -142,23 +147,28 @@ object Turret: SubsystemBase("Turret") {
         turretMotor.addFollower(Falcons.TURRET_1)
 
         pivotEncoder.applyConfiguration {
-            inverted(false)
-            magnetSensorOffset(pivotEncoderOffset)
+            inverted(true)
+            magnetSensorOffset(0.084716796875)
         }
         pivotMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
             coastMode()
-            remoteCANCoder(pivotEncoder, 216.0)
+            s(0.005, StaticFeedforwardSignValue.UseVelocitySign)
+            p(300.0)
+            motionMagic(1.0, 0.25)
+            Feedback.SensorToMechanismRatio = 216.0 * 2.0 / 1.263 * 1.0338
+//            remoteCANCoder(pivotEncoder, 216.0)
         }
 
         turretMotor.setPosition(0.0)
+        pivotMotor.setPosition(pivotEncoder.position.valueAsDouble)
     }
 
     override fun periodic() {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
-            println("running ff")
+//            println("running ff")
             turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
         if (pivotMotor.controlMode.value in PhoenixUtil.positionControlModes) {

@@ -9,6 +9,7 @@ object AnalogSensors {
 }
 
 object DigitalSensors {
+    const val INTAKE_STOP_SENSOR = 0
 }
 
 object Falcons {

@@ -11,6 +11,7 @@ import org.team2471.frc.lib.control.commands.parallelCommand
 import org.team2471.frc.lib.control.commands.toCommand
 import org.team2471.frc.lib.math.deadband
 import org.team2471.frc.lib.math.normalize
+import org.team2471.frc.lib.units.degrees
 
 object OI: SubsystemBase("OI") {
     val driverController = MeanCommandXboxController(0, false)
@@ -100,7 +101,12 @@ object OI: SubsystemBase("OI") {
             )
         )
 
-        driverController.a().whileTrue(Turret.aimAtGoal())
+        driverController.a().onTrue(Intake.home())
+        driverController.x().onTrue(runOnce { Intake.stow() })
+        driverController.b().onTrue(runOnce { Intake.deploy() })
+//        driverController.y().onTrue(runOnce { Turret.pivotSetpoint = 40.0.degrees; println(Turret.pivotSetpoint) })
+//        driverController.b().onTrue(runOnce { Turret.pivotSetpoint = 25.0.degrees; println(Turret.pivotSetpoint) })
+//        driverController.a().onTrue(runOnce { Turret.pivotSetpoint = 5.0.degrees; println(Turret.pivotSetpoint) })
 
 //        driverController.start().onTrue(runOnce { Drive.resetOdometryToAbsolute() })
     }

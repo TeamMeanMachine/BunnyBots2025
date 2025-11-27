@@ -3,7 +3,6 @@ package org.team2471.frc.lib.ctre
 import com.ctre.phoenix6.configs.MotionMagicConfigs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.Follower
-import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue
 import com.ctre.phoenix6.signals.GravityTypeValue
@@ -65,6 +64,18 @@ fun TalonFXConfiguration.currentLimits(continuousLimit: Double, peakLimit: Doubl
 }
 
 /**
+ * Set the stator current limits.
+ * @param peakLimit the maximum possible current the motor can draw.
+ */
+fun TalonFXConfiguration.statorCurrentLimit(peakLimit: Double): TalonFXConfiguration {
+    this.CurrentLimits.apply {
+        StatorCurrentLimit = peakLimit
+        StatorCurrentLimitEnable = true
+    }
+    return this
+}
+
+/**
  * Motor will update its position and velocity whenever the CANcoder publishes its information on the CAN bus.
  * The motor's internal rotor will not be used.
  *
@@ -80,23 +91,6 @@ fun TalonFXConfiguration.currentLimits(continuousLimit: Double, peakLimit: Doubl
  */
 fun TalonFXConfiguration.remoteCANCoder(encoderID: Int, motorToSensorRatio: Double, sensorToMechanismRatio: Double = 1.0): TalonFXConfiguration =
     alternateFeedbackSensor(encoderID, FeedbackSensorSourceValue.RemoteCANcoder, motorToSensorRatio, sensorToMechanismRatio)
-
-/**
- * Motor will update its position and velocity whenever the CANcoder publishes its information on the CAN bus.
- * The motor's internal rotor will not be used.
- *
- * @param canCoder The CANcoder to use as a feedback device.
- * @param motorToSensorRatio number of motor rotations for 1 CANcoder rotation.
- * @param sensorToMechanismRatio number of sensor rotations for 1 mechanism rotation.
- *
- * @see FeedbackSensorSourceValue.RemoteCANcoder
- * @see fusedCANCoder
- * @see alternateFeedbackSensor
- *
- * @author Justin likes "Remote" better than "Fused." Test both but start with RemoteCANCoder.
- */
-fun TalonFXConfiguration.remoteCANCoder(canCoder: CANcoder, motorToSensorRatio: Double, sensorToMechanismRatio: Double = 1.0): TalonFXConfiguration =
-    remoteCANCoder(canCoder.deviceID, motorToSensorRatio, sensorToMechanismRatio)
 
 /**
  * Motor will fuse its position and velocity with another CANcoder. Slow speed will use CANcoder, fast speed will use motor rotor.
@@ -115,24 +109,6 @@ fun TalonFXConfiguration.remoteCANCoder(canCoder: CANcoder, motorToSensorRatio: 
  */
 fun TalonFXConfiguration.fusedCANCoder(encoderID: Int, motorToSensorRatio: Double, sensorToMechanismRatio: Double = 1.0): TalonFXConfiguration =
     alternateFeedbackSensor(encoderID, FeedbackSensorSourceValue.FusedCANcoder, motorToSensorRatio, sensorToMechanismRatio)
-
-/**
- * Motor will fuse its position and velocity with another CANcoder. Slow speed will use CANcoder, fast speed will use motor rotor.
- *
- * Make sure the motor and encoder move in the same direction.
- *
- * @param canCoder The CANcoder to use as a feedback device.
- * @param motorToSensorRatio number of motor rotations for 1 CANcoder rotation.
- * @param sensorToMechanismRatio number of sensor rotations for 1 mechanism rotation.
- *
- * @see FeedbackSensorSourceValue.FusedCANcoder
- * @see remoteCANCoder
- * @see alternateFeedbackSensor
- *
- * @author Justin likes "Remote" better than "Fused." Test both but start with RemoteCANCoder.
- */
-fun TalonFXConfiguration.fusedCANCoder(canCoder: CANcoder, motorToSensorRatio: Double, sensorToMechanismRatio: Double = 1.0): TalonFXConfiguration =
-    fusedCANCoder(canCoder.deviceID, motorToSensorRatio, sensorToMechanismRatio)
 
 /**
  * Sets the configs that affect the feedback of this motor. Aka: What it will think its own position/velocity is.
@@ -320,6 +296,7 @@ fun TalonFX.applyConfiguration(modifications: TalonFXConfiguration.() -> Unit = 
  * @see applyConfiguration
  */
 fun TalonFX.modifyConfiguration(overrides: TalonFXConfiguration.() -> Unit) {
+    // Get the current motor configuration, apply modifications, then apply to the motor.
     val oldConfiguration = TalonFXConfiguration()
     this.configurator.refresh(oldConfiguration) // Get motor configuration parameters
     this.configurator.apply(oldConfiguration.apply(overrides)) // Apply overrides to the config and send config to motor.

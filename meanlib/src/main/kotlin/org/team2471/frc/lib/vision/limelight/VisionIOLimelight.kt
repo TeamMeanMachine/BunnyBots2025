@@ -5,13 +5,17 @@ import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
+import edu.wpi.first.wpilibj.Timer
 import org.team2471.frc.lib.units.asDegrees
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import org.team2471.frc.lib.units.asSeconds
+import org.team2471.frc.lib.units.milliseconds
+import org.team2471.frc.lib.units.seconds
 
 
-class VisionIOLimelight(val name: String, val headingSupplier: () -> Angle): VisionIO {
+class VisionIOLimelight(val name: String, val useMegatag2: Boolean = true, val headingSupplier: () -> Angle): VisionIO {
 
     override var mode: LimelightMode = LimelightMode.APRILTAG
         set(value) {
@@ -46,12 +50,12 @@ class VisionIOLimelight(val name: String, val headingSupplier: () -> Angle): Vis
 
         if (mode == LimelightMode.APRILTAG) {
             val llPoseEstimate =
-                if (beforeFirstEnable) LimelightHelpers.getBotPoseEstimate_wpiBlue(name) else LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(
+                if (beforeFirstEnable || !useMegatag2) LimelightHelpers.getBotPoseEstimate_wpiBlue(name) else LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(
                     name
                 )
 
             inputs.aprilTagPoseEstimate = llPoseEstimate?.pose ?: Pose2d()
-            inputs.aprilTagTimestamp = Utils.fpgaToCurrentTime(llPoseEstimate?.timestampSeconds ?: 0.0)
+            inputs.aprilTagTimestamp = Timer.getFPGATimestamp() - (llPoseEstimate?.latency?.milliseconds?.asSeconds ?: 0.0)
             inputs.targetCorners = DoubleArray(8) { 0.0 }
             inputs.targetCoords = DoubleArray(2) { 0.0 }
         } else {
@@ -125,9 +129,8 @@ interface VisionIO {
         var mode = LimelightMode.APRILTAG
 
         var aprilTagPoseEstimate = Pose2d()
+        // Seconds
         var aprilTagTimestamp = 0.0
-        //id, x, y, id, x, y
-        var rawFiducials: DoubleArray = DoubleArray(6) { 0.0 }
         var targetCorners: DoubleArray = DoubleArray(8) { 0.0 }
         var targetCoords: DoubleArray = DoubleArray(2) { 0.0 }
 
@@ -167,7 +170,6 @@ interface VisionIO {
             table.put("Mode", mode)
             table.put("AprilTag Pose Estimate", aprilTagPoseEstimate)
             table.put("AprilTag Timestamp", aprilTagTimestamp)
-            table.put("Raw Fiducials", rawFiducials)
             table.put("Target Corners", targetCorners)
             table.put("Target Coordinates", targetCoords)
         }
@@ -177,7 +179,6 @@ interface VisionIO {
             mode = table.get("Mode", mode)
             aprilTagPoseEstimate = table.get("AprilTag Pose Estimate", aprilTagPoseEstimate).first()
             aprilTagTimestamp = table.get("AprilTag Timestamp", aprilTagTimestamp)
-            rawFiducials = table.get("Raw Fiducials", rawFiducials)
             targetCorners = table.get("Target Corners", targetCorners)
             targetCoords = table.get("Target Coordinates", targetCoords)
         }

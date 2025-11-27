@@ -2,6 +2,7 @@
 package frc.team2471.bunnyBots2025
 
 import com.ctre.phoenix6.SignalLogger
+import com.ctre.phoenix6.controls.MotionMagicDutyCycle
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
@@ -163,6 +164,7 @@ object Robot : LoggedRobot() {
     override fun disabledPeriodic() {
         Autonomous.flipPathsIfAllianceChange()
         Autonomous.updateSelectedAuto()
+        Intake.deployMotor.setControl(MotionMagicDutyCycle(Intake.deployMotor.position.valueAsDouble))
     }
 
     /** This function is called once when auto is enabled.  */
