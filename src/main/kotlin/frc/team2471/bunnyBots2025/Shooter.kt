@@ -15,16 +15,18 @@ import org.team2471.frc.lib.ctre.inverted
 
 object Shooter: SubsystemBase("Shooter") {
     val table = NetworkTableInstance.getDefault().getTable("Shooter")
-    val shooterMotorRight = TalonFX(Falcons.SHOOTER_RIGHT)
-    val shooterMotorLeft = TalonFX(Falcons.SHOOTER_LEFT)
+    val shooterMotorRight = TalonFX(Falcons.SHOOTER_RIGHT, CANivores.TURRET_CAN)
+    val shooterMotorLeft = TalonFX(Falcons.SHOOTER_LEFT, CANivores.TURRET_CAN)
 
-    @get:AutoLogOutput
+    var ramping = false
+
+    @get:AutoLogOutput(key = "Shooter/Shooter Motor Right")
     val motorRpmRight
-        get() = shooterMotorRight.velocity
+        get() = shooterMotorRight.velocity.valueAsDouble
 
-    @get:AutoLogOutput
+    @get:AutoLogOutput(key = "Shooter/Shooter Motor Left")
     val motorRpmLeft
-        get() = shooterMotorLeft.velocity
+        get() = shooterMotorLeft.velocity.valueAsDouble
 
     @get:AutoLogOutput
     var rightRpmSetpoint = 0.0
@@ -52,21 +54,23 @@ object Shooter: SubsystemBase("Shooter") {
     init {
         shooterMotorRight.applyConfiguration {
             currentLimits(25.0,40.0,1.0)
-            inverted(false)
+            inverted(true)
             coastMode()
         }
         shooterMotorLeft.applyConfiguration {
             currentLimits(25.0,40.0,1.0)
-            inverted(true)
+            inverted(false)
             coastMode()
         }
     }
 
     fun shoot() {
-        shooterSetpoint = 0.5
+        shooterSetpoint = 0.9
+        ramping = true
     }
 
     fun stop() {
         shooterSetpoint = 0.0
+        ramping = false
     }
 }

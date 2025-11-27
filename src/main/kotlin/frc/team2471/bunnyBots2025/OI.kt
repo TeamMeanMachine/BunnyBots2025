@@ -9,6 +9,7 @@ import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
 import org.team2471.frc.lib.control.commands.parallelCommand
 import org.team2471.frc.lib.control.commands.toCommand
+import org.team2471.frc.lib.control.rightBumper
 import org.team2471.frc.lib.math.deadband
 import org.team2471.frc.lib.math.normalize
 import org.team2471.frc.lib.units.degrees
@@ -100,6 +101,26 @@ object OI: SubsystemBase("OI") {
                 Turret.aimFieldCentricWithJoystick()
             )
         )
+
+        driverController.leftBumper().onTrue(runOnce {
+            if (Intake.intakeState != Intake.IntakeState.INTAKING) {
+                Intake.intakeState = Intake.IntakeState.INTAKING
+            } else {
+                Intake.intakeState = Intake.IntakeState.HOLDING
+            }
+        })
+
+        driverController.rightTrigger(0.5).whileTrue(runOnce {
+            Intake.intakeState = Intake.IntakeState.SHOOTING
+            Shooter.shoot()
+        })
+        driverController.rightBumper().onTrue(runOnce {
+            if (Shooter.ramping) {
+                Shooter.stop()
+            } else {
+                Shooter.shoot()
+            }
+        })
 
         driverController.a().onTrue(Intake.home())
         driverController.x().onTrue(runOnce { Intake.stow() })

@@ -7,6 +7,7 @@ import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
+import com.ctre.phoenix6.signals.ControlModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.networktables.NetworkTableInstance
@@ -167,11 +168,11 @@ object Turret: SubsystemBase("Turret") {
 
     override fun periodic() {
         // Are the motors running position control loops? Update the custom feedforward
-        if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+        if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage) {
 //            println("running ff")
             turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
-        if (pivotMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+        if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
         }
     }
