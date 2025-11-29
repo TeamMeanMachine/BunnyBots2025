@@ -71,6 +71,12 @@ object Intake: SubsystemBase("Intake") {
     const val BULLDOZING_POWER = -0.2
     const val HOMING_POWER = 0.1
 
+    var frontIntakePowerSetpoint: Double = 0.0
+        set(value) {
+            field = if (deployMotorPosition < DEPLOY_POSE - 2.0) value.coerceIn(-1.0, 1.0) else 0.0
+            frontMotor.setControl(DutyCycleOut(field))
+        }
+
     @get:AutoLogOutput(key = "Intake/Current State")
     var intakeState = IntakeState.HOLDING
 
@@ -157,7 +163,7 @@ object Intake: SubsystemBase("Intake") {
     override fun periodic() {
         when (intakeState) {
             IntakeState.INTAKING -> {
-                frontMotor.setControl(DutyCycleOut(INTAKE_POWER))
+                frontIntakePowerSetpoint = INTAKE_POWER
                 if (hasPieceInIndexer) {
                     centeringMotorLeft.setControl(DutyCycleOut(0.0))
                     centeringMotorRight.setControl(DutyCycleOut(0.0))
@@ -172,7 +178,7 @@ object Intake: SubsystemBase("Intake") {
             }
 
             IntakeState.HOLDING -> {
-                frontMotor.setControl(DutyCycleOut(0.0))
+                frontIntakePowerSetpoint = 0.0
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 centeringMotorRight.setControl(DutyCycleOut(0.0))
                 indexerMotor.setControl(DutyCycleOut(0.0))
@@ -181,7 +187,7 @@ object Intake: SubsystemBase("Intake") {
             }
 
             IntakeState.REVERSING -> {
-                frontMotor.setControl(DutyCycleOut(-INTAKE_POWER))
+                frontIntakePowerSetpoint = -INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
                 indexerMotor.setControl(DutyCycleOut(-TOP_CENTERING_POWER))
@@ -190,7 +196,7 @@ object Intake: SubsystemBase("Intake") {
             }
 
             IntakeState.SHOOTING -> {
-                frontMotor.setControl(DutyCycleOut(INTAKE_POWER))
+                frontIntakePowerSetpoint = INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 indexerMotor.setControl(DutyCycleOut(TOP_CENTERING_POWER))
@@ -199,7 +205,7 @@ object Intake: SubsystemBase("Intake") {
             }
 
             IntakeState.BULLDOZING -> {
-                frontMotor.setControl(DutyCycleOut(BULLDOZING_POWER))
+                frontIntakePowerSetpoint = BULLDOZING_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 indexerMotor.setControl(DutyCycleOut(0.0))
             }
