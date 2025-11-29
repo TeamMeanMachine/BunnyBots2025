@@ -109,6 +109,13 @@ object OI: SubsystemBase("OI") {
                 Intake.intakeState = Intake.IntakeState.HOLDING
             }
         })
+        driverController.a().onTrue(runOnce {
+            if (Intake.intakeState != Intake.IntakeState.REVERSING) {
+                Intake.intakeState = Intake.IntakeState.REVERSING
+            } else {
+                Intake.intakeState = Intake.IntakeState.HOLDING
+            }
+        })
 
         driverController.rightTrigger(0.5).whileTrue(runOnce {
             Intake.intakeState = Intake.IntakeState.SHOOTING
@@ -122,7 +129,7 @@ object OI: SubsystemBase("OI") {
             }
         })
 
-        driverController.a().onTrue(Intake.home())
+        driverController.y().onTrue(Intake.home())
         driverController.x().onTrue(runOnce { Intake.stow() })
         driverController.b().onTrue(runOnce { Intake.deploy() })
 //        driverController.y().onTrue(runOnce { Turret.pivotSetpoint = 40.0.degrees; println(Turret.pivotSetpoint) })

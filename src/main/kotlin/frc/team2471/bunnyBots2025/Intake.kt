@@ -40,7 +40,7 @@ object Intake: SubsystemBase("Intake") {
     val frontMotor = TalonFX(Falcons.INTAKE_FRONT)
     val centeringMotorRight = TalonFX(Falcons.CENTERING_RIGHT)
     val centeringMotorLeft = TalonFX(Falcons.CENTERING_LEFT)
-    val indexerMotor = TalonFX(Falcons.INDEXER)
+    val centeringMotorTop = TalonFX(Falcons.INDEXER)
     val cycloneMotor = TalonFX(Falcons.CYCLONE, CANivores.TURRET_CAN)
     val shooterFeederMotor = TalonFX(Falcons.SHOOTER_FEEDER, CANivores.TURRET_CAN)
 
@@ -61,20 +61,25 @@ object Intake: SubsystemBase("Intake") {
 
     const val CAN_RANGE_DISTANCE_THRESHOLD = 0.07 // meters
 
-    val INTAKE_POWER = frontIntakePowerEntry.getDouble(0.7)
-    val TOP_CENTERING_POWER = topCenteringPowerEntry.getDouble(0.7)
-    val LEFT_CENTERING_POWER = leftCenteringPowerEntry.getDouble(0.7)
-    val RIGHT_CENTERING_POWER = rightCenteringPowerEntry.getDouble(0.7)
-    val CYCLONE_POWER = cycloneFeedPowerEntry.getDouble(0.7)
-    val SHOOTER_FEEDER_POWER = shooterFeedPowerEntry.getDouble(1.0)
+    val INTAKE_POWER get() = frontIntakePowerEntry.getDouble(0.7)
+    val TOP_CENTERING_POWER get() = topCenteringPowerEntry.getDouble(0.7)
+    val LEFT_CENTERING_POWER get() = leftCenteringPowerEntry.getDouble(0.7)
+    val RIGHT_CENTERING_POWER get() = rightCenteringPowerEntry.getDouble(0.7)
+    val CYCLONE_POWER get() = cycloneFeedPowerEntry.getDouble(1.0)
+    val SHOOTER_FEEDER_POWER get() = shooterFeedPowerEntry.getDouble(1.0)
 
     const val BULLDOZING_POWER = -0.2
     const val HOMING_POWER = 0.1
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {
-            field = if (deployMotorPosition < DEPLOY_POSE - 2.0) value.coerceIn(-1.0, 1.0) else 0.0
+            field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             frontMotor.setControl(DutyCycleOut(field))
+        }
+    var topCentringPowerSetpoint: Double = 0.0
+        set(value) {
+            field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
+            centeringMotorTop.setControl(DutyCycleOut(field))
         }
 
     @get:AutoLogOutput(key = "Intake/Current State")
@@ -122,13 +127,13 @@ object Intake: SubsystemBase("Intake") {
             currentLimits(20.0,30.0,1.0)
             coastMode()
         }
-        indexerMotor.applyConfiguration {
+        centeringMotorTop.applyConfiguration {
             currentLimits(10.0,20.0,1.0)
             inverted(true)
             coastMode()
         }
         cycloneMotor.applyConfiguration {
-            currentLimits(30.0, 40.0, 1.0)
+            currentLimits(39.0, 50.0, 0.5)
             coastMode()
         }
         shooterFeederMotor.applyConfiguration {
@@ -171,7 +176,7 @@ object Intake: SubsystemBase("Intake") {
                     centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
                     centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 }
-                indexerMotor.setControl(DutyCycleOut(TOP_CENTERING_POWER))
+                topCentringPowerSetpoint = TOP_CENTERING_POWER
 
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
@@ -181,7 +186,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = 0.0
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 centeringMotorRight.setControl(DutyCycleOut(0.0))
-                indexerMotor.setControl(DutyCycleOut(0.0))
+                topCentringPowerSetpoint = 0.0
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
             }
@@ -190,7 +195,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = -INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
-                indexerMotor.setControl(DutyCycleOut(-TOP_CENTERING_POWER))
+                topCentringPowerSetpoint = -TOP_CENTERING_POWER
                 cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
                 shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
             }
@@ -199,7 +204,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
-                indexerMotor.setControl(DutyCycleOut(TOP_CENTERING_POWER))
+                topCentringPowerSetpoint = TOP_CENTERING_POWER
                 cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
                 shooterFeederMotor.setControl(DutyCycleOut(SHOOTER_FEEDER_POWER))
             }
@@ -207,7 +212,7 @@ object Intake: SubsystemBase("Intake") {
             IntakeState.BULLDOZING -> {
                 frontIntakePowerSetpoint = BULLDOZING_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
-                indexerMotor.setControl(DutyCycleOut(0.0))
+                topCentringPowerSetpoint = 0.0
             }
         }
 

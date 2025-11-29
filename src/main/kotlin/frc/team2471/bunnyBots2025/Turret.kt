@@ -149,7 +149,7 @@ object Turret: SubsystemBase("Turret") {
 
         pivotEncoder.applyConfiguration {
             inverted(true)
-            magnetSensorOffset(0.084716796875)
+            magnetSensorOffset(0.342041015625)
         }
         pivotMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)

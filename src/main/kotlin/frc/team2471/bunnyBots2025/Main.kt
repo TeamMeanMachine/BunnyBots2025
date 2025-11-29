@@ -165,6 +165,7 @@ object Robot : LoggedRobot() {
         Autonomous.flipPathsIfAllianceChange()
         Autonomous.updateSelectedAuto()
         Intake.deployMotor.setControl(MotionMagicDutyCycle(Intake.deployMotor.position.valueAsDouble))
+        Intake.intakeState = Intake.IntakeState.HOLDING
     }
 
     /** This function is called once when auto is enabled.  */
