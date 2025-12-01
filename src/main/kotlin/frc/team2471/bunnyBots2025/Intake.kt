@@ -8,6 +8,7 @@ import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.DigitalInput
+import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.AutoLogOutput
@@ -52,6 +53,9 @@ object Intake: SubsystemBase("Intake") {
     val intakeStopSensor = DigitalInput(DigitalSensors.INTAKE_STOP_SENSOR)
 
     val hardStopDebouncer = Debouncer(0.02)
+
+    val centeringTimer = Timer()
+    var alternateCenteringMotors = 0
 
     @get:AutoLogOutput(key = "Intake/Hit Hard Stop")
     val hitHardStop get() = !intakeStopSensor.get()
@@ -104,6 +108,8 @@ object Intake: SubsystemBase("Intake") {
         shooterFeedPowerEntry.setPersistent()
         deployPoseEntry.setPersistent()
         stowPoseEntry.setPersistent()
+
+        centeringTimer.restart()
 
 
 
@@ -173,6 +179,7 @@ object Intake: SubsystemBase("Intake") {
                     centeringMotorLeft.setControl(DutyCycleOut(0.0))
                     centeringMotorRight.setControl(DutyCycleOut(0.0))
                 } else {
+//                    alternateCenteringLogic()
                     centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
                     centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 }
@@ -186,6 +193,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = 0.0
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 centeringMotorRight.setControl(DutyCycleOut(0.0))
+//                alternateCenteringLogic()
                 topCentringPowerSetpoint = 0.0
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
@@ -217,6 +225,19 @@ object Intake: SubsystemBase("Intake") {
         }
 
         Logger.recordOutput("Intake/Deploy Motor Position", deployMotorPosition)
+    }
+
+    fun alternateCenteringLogic() {
+//        val t = centeringTimer.get()
+
+        if (alternateCenteringMotors % 2 == 0) {
+            centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
+            centeringMotorRight.setControl(DutyCycleOut(0.0))
+        } else {
+            centeringMotorLeft.setControl(DutyCycleOut(0.0))
+            centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
+        }
+        alternateCenteringMotors++
     }
 
     enum class IntakeState {
