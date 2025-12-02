@@ -32,6 +32,7 @@ object Autonomous {
     private val autoChooser: LoggedDashboardChooser<AutoCommand?> = LoggedDashboardChooser<AutoCommand?>("Auto Chooser").apply {
         addOption("8 Foot Straight", AutoCommand(eightFootStraight()))
         addOption("6x6 Square", AutoCommand(squarePathTest()))
+        addOption("Left to Center", AutoCommand(leftToCenter()))
     }
     // Chooser for test commands
     private val testChooser: LoggedDashboardChooser<Command?> = LoggedDashboardChooser<Command?>("Test Chooser").apply {
@@ -160,6 +161,10 @@ object Autonomous {
     }
     private fun squarePathTest (): Command {
         return Drive.driveAlongChoreoPath(paths["square"]!!, resetOdometry = true)
+    }
+
+    private fun leftToCenter(): Command {
+        return Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true)
     }
 
     private fun pathPlannerPath(): Command {
