@@ -60,8 +60,8 @@ object Intake: SubsystemBase("Intake") {
     @get:AutoLogOutput(key = "Intake/Hit Hard Stop")
     val hitHardStop get() = !intakeStopSensor.get()
 
-    val DEPLOY_POSE = deployPoseEntry.getDouble(15.5)
-    val STOW_POSE = stowPoseEntry.getDouble(-0.5)
+    val DEPLOY_POSE get() = deployPoseEntry.getDouble(19.4)
+    val STOW_POSE get() = stowPoseEntry.getDouble(0.0)
 
     const val CAN_RANGE_DISTANCE_THRESHOLD = 0.07 // meters
 
@@ -121,7 +121,7 @@ object Intake: SubsystemBase("Intake") {
             motionMagic(300.0, 500.0)
         }
         frontMotor.applyConfiguration {
-            currentLimits(10.0,20.0,1.0)
+            currentLimits(20.0,30.0,1.0)
             coastMode()
         }
         centeringMotorLeft.applyConfiguration {
@@ -134,7 +134,7 @@ object Intake: SubsystemBase("Intake") {
             coastMode()
         }
         centeringMotorTop.applyConfiguration {
-            currentLimits(10.0,20.0,1.0)
+            currentLimits(20.0,30.0,1.0)
             inverted(true)
             coastMode()
         }
@@ -179,9 +179,9 @@ object Intake: SubsystemBase("Intake") {
                     centeringMotorLeft.setControl(DutyCycleOut(0.0))
                     centeringMotorRight.setControl(DutyCycleOut(0.0))
                 } else {
-//                    alternateCenteringLogic()
-                    centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
-                    centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
+                    alternateCenteringLogic()
+//                    centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
+//                    centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 }
                 topCentringPowerSetpoint = TOP_CENTERING_POWER
 
@@ -193,7 +193,6 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = 0.0
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 centeringMotorRight.setControl(DutyCycleOut(0.0))
-//                alternateCenteringLogic()
                 topCentringPowerSetpoint = 0.0
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
@@ -210,8 +209,9 @@ object Intake: SubsystemBase("Intake") {
 
             IntakeState.SHOOTING -> {
                 frontIntakePowerSetpoint = INTAKE_POWER
-                centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
-                centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
+//                centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
+//                centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
+                alternateCenteringLogic()
                 topCentringPowerSetpoint = TOP_CENTERING_POWER
                 cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
                 shooterFeederMotor.setControl(DutyCycleOut(SHOOTER_FEEDER_POWER))
@@ -225,6 +225,7 @@ object Intake: SubsystemBase("Intake") {
         }
 
         Logger.recordOutput("Intake/Deploy Motor Position", deployMotorPosition)
+        Logger.recordOutput("Intake/Cyclone Current", cycloneMotor.supplyCurrent.valueAsDouble)
     }
 
     fun alternateCenteringLogic() {

@@ -65,7 +65,7 @@ object Shooter: SubsystemBase("Shooter") {
     }
 
     fun shoot() {
-        shooterSetpoint = 0.9
+        shooterSetpoint = 0.5
         ramping = true
     }
 
