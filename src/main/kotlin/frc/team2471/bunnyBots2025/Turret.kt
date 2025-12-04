@@ -66,11 +66,15 @@ object Turret: SubsystemBase("Turret") {
     val rawLampreyAngle: Angle
         get() = candi.pwM1Position.valueAsDouble.IEEErem(1.0).rotations.wrap()
 
-    val defaultTurretEncoderOffset = 0.0
+    val defaultTurretEncoderOffset = 126.3
     val defaultPivotEncoderOffset = 0.0
 
     var lampreyEncoderOffset: Double = turretEncoderOffsetEntry.getDouble(defaultTurretEncoderOffset)
-    val pivotEncoderOffset: Double = pivotEncoderOffsetEntry.getDouble(defaultPivotEncoderOffset)
+    var pivotEncoderOffset: Double = pivotEncoderOffsetEntry.getDouble(defaultPivotEncoderOffset)
+        set(value) {
+            pivotEncoderOffsetEntry.setDouble(value)
+            field = value
+        }
 
     @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
     val unCorrectedLampreyAngle: Angle
@@ -116,7 +120,7 @@ object Turret: SubsystemBase("Turret") {
         }
 
     @get:AutoLogOutput(key = "Turret/pivotEncoderAngle")
-    val pivotEncoderAngle get() = pivotEncoder.position.valueAsDouble.rotations
+    val pivotEncoderAngle get() = pivotEncoder.position.valueAsDouble.rotations + pivotEncoderOffset.degrees
 
     @get:AutoLogOutput(key = "Turret/pivotSetpoint")
     var pivotSetpoint: Angle = pivotAngle
@@ -133,6 +137,9 @@ object Turret: SubsystemBase("Turret") {
 
 
     init {
+
+        pivotEncoderOffsetEntry.setPersistent()
+
         turretMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
             inverted(false)
