@@ -1,40 +1,27 @@
 package frc.team2471.bunnyBots2025
 
-import com.ctre.phoenix6.controls.MotionMagicDutyCycle
 import com.ctre.phoenix6.controls.MotionMagicVoltage
 import com.ctre.phoenix6.controls.PositionDutyCycle
-import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import frc.team2471.bunnyBots2025.Vision.TURRET_TO_ROBOT_IN
 import org.littletonrobotics.junction.AutoLogOutput
+import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.commands.runCommand
-import org.team2471.frc.lib.ctre.PhoenixUtil
-import org.team2471.frc.lib.ctre.addFollower
-import org.team2471.frc.lib.ctre.applyConfiguration
-import org.team2471.frc.lib.ctre.coastMode
-import org.team2471.frc.lib.ctre.currentLimits
-import org.team2471.frc.lib.ctre.inverted
-import org.team2471.frc.lib.ctre.magnetSensorOffset
-import org.team2471.frc.lib.ctre.motionMagic
-import org.team2471.frc.lib.ctre.p
-import org.team2471.frc.lib.ctre.remoteCANCoder
-import org.team2471.frc.lib.ctre.s
-import org.team2471.frc.lib.units.asDegrees
-import org.team2471.frc.lib.units.asRadians
-import org.team2471.frc.lib.units.asRotations
-import org.team2471.frc.lib.units.cos
-import org.team2471.frc.lib.units.degrees
-import org.team2471.frc.lib.units.rotations
-import org.team2471.frc.lib.units.unWrap
-import org.team2471.frc.lib.units.wrap
+import org.team2471.frc.lib.ctre.*
+import org.team2471.frc.lib.units.*
+import org.team2471.frc.lib.util.angleTo
+import java.lang.reflect.Field
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.sin
@@ -50,7 +37,7 @@ Has a function that uses the subsystem that allows for a joystick to manually ai
 Predict location of goal only based on delta odometry and delta turret angle, this will reduce the requirement for an accurate absolute encoder.
  */
 
-object Turret: SubsystemBase("Turret") {
+object Turret : SubsystemBase("Turret") {
     private val table = NetworkTableInstance.getDefault().getTable("Turret")
     private val turretEncoderOffsetEntry = table.getEntry("Turret Encoder Offset")
     private val pivotEncoderOffsetEntry = table.getEntry("Pivot Encoder Offset")
@@ -87,6 +74,7 @@ object Turret: SubsystemBase("Turret") {
     @get:AutoLogOutput(key = "Turret/turretEncoderAngle")
     val turretEncoderAngle: Angle
         get() = (unCorrectedLampreyAngle - lampreyAlignmentOffset)
+
     @get:AutoLogOutput(key = "Turret/turretEncoderFieldCentricAngle")
     val turretEncoderFieldCentricAngle: Angle
         get() = turretEncoderAngle + Drive.heading.measure
@@ -94,6 +82,7 @@ object Turret: SubsystemBase("Turret") {
     @get:AutoLogOutput(key = "Turret/turretMotorAngle")
     val turretMotorAngle: Angle
         get() = turretMotor.position.valueAsDouble.rotations
+
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
         get() = turretMotorAngle + Drive.heading.measure
@@ -112,6 +101,7 @@ object Turret: SubsystemBase("Turret") {
             field = value.unWrap(turretMotorAngle)
             turretMotor.setControl(MotionMagicVoltage(field.asRotations))
         }
+
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle
         get() = turretSetpoint - Drive.heading.measure
@@ -128,6 +118,7 @@ object Turret: SubsystemBase("Turret") {
             field = value.coerceIn(0.0.degrees, 45.0.degrees)
             pivotMotor.setControl(PositionDutyCycle(field.asRotations).withFeedForward(pivotFeedForward))
         }
+
     @get:AutoLogOutput(key = "Turret/pivotFeedForward")
     val pivotFeedForward: Double
         get() = pivotAngle.cos() * 0.0
@@ -196,6 +187,15 @@ object Turret: SubsystemBase("Turret") {
 
     fun aimAtGoal(): Command = runCommand {
         turretFieldCentricSetpoint = 0.0.degrees
+
+        val turretPos = if (Vision.rawLimelightPose != Pose2d()) Vision.rawLimelightPose.translation else Drive.pose.translation - Translation2d(
+            TURRET_TO_ROBOT_IN.inches,
+            0.0.inches
+        ).rotateBy(Drive.heading.measure.asRotation2d)
+
+        Logger.recordOutput("TurretPose", Pose2d(turretPos, turretEncoderFieldCentricAngle.asRotation2d))
+//
+//        turretFieldCentricSetpoint = turretPos.angleTo(FieldManager.goalPose)
     }
 
 }

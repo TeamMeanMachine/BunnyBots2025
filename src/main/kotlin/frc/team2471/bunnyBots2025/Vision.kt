@@ -1,56 +1,56 @@
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.Utils
 import edu.wpi.first.math.VecBuilder
-import edu.wpi.first.math.controller.PIDController
-import edu.wpi.first.math.filter.MedianFilter
 import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.kinematics.ChassisSpeeds
-import edu.wpi.first.units.measure.Angle
-import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
-import org.team2471.frc.lib.control.commands.finallyRun
-import org.team2471.frc.lib.control.commands.runCommand
-import org.team2471.frc.lib.units.asDegrees
+import org.littletonrobotics.junction.Logger
+import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
-import org.team2471.frc.lib.units.radians
-import org.team2471.frc.lib.vision.limelight.LimelightMode
+import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
-import org.littletonrobotics.junction.Logger
-import kotlin.math.absoluteValue
-import kotlin.math.atan2
-import kotlin.math.sign
 
 object Vision : SubsystemBase() {
-    val io: Array<VisionIO> = arrayOf(
-        VisionIOLimelight("limelight") { Turret.turretEncoderFieldCentricAngle },
-    )
+    val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }
 
-    val inputs = Array(io.size) { VisionIO.VisionIOInputs() }
-    var rawAprilTagPose = Pose2d()
+    const val TURRET_TO_ROBOT_IN = 7.39
+
+    val inputs = VisionIO.VisionIOInputs()
+    var rawLimelightPose = Pose2d()
 
     override fun periodic() {
-        for (i in io.indices) {
-            io[i].updateInputs(inputs[i])
+        io.updateInputs(inputs)
 
-            if (inputs[i].aprilTagPoseEstimate != Pose2d()) {
-                rawAprilTagPose = inputs[i].aprilTagPoseEstimate
-                Drive.addVisionMeasurement(rawAprilTagPose, inputs[i].aprilTagTimestamp, VecBuilder.fill(0.01, 0.01, 1000000000.0))
-            }
-
+        if (inputs.aprilTagPoseEstimate != Pose2d()) {
+            rawLimelightPose = inputs.aprilTagPoseEstimate
+            Logger.recordOutput("RobotPos", Pose2d(
+                rawLimelightPose.translation + Translation2d(
+                    TURRET_TO_ROBOT_IN.inches,
+                    0.0.inches
+                ).rotateBy((Drive.headingHistory.get(inputs.aprilTagTimestamp) ?: 0.0).degrees.asRotation2d),
+                Drive.heading
+            ))
+            Drive.addVisionMeasurement(
+                Pose2d(
+                    rawLimelightPose.translation + Translation2d(
+                        TURRET_TO_ROBOT_IN.inches,
+                        0.0.inches
+                    ).rotateBy((Drive.headingHistory.get(inputs.aprilTagTimestamp) ?: 0.0).degrees.asRotation2d),
+                    Drive.heading
+                ),
+                Utils.fpgaToCurrentTime(inputs.aprilTagTimestamp), VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
+            )
         }
+
     }
 
     fun gyroReset() {
-        io.forEach { it.gyroReset() }
+        io.gyroReset()
     }
 
-    fun onEnable() = io.forEach { it.enable() }
+    fun onEnable() = io.enable()
 
-    fun onDisable() = io.forEach { it.disable() }
-
-
-
+    fun onDisable() = io.disable()
 }

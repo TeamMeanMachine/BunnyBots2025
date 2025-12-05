@@ -73,8 +73,9 @@ object Robot : LoggedRobot() {
     val shooter = Shooter
     val intake = Intake
     val turret = Turret
+    val vision = Vision
 
-    var allSubsystems = arrayOf(drive, turret, intake, shooter, oi)
+    var allSubsystems = arrayOf(drive, turret, intake, shooter, oi, vision)
 
     init {
         // Tells FRC we use Kotlin
@@ -151,6 +152,7 @@ object Robot : LoggedRobot() {
 //        enabledTimer.restart()
         println("Enabled init $timeSinceEnabled")
         Drive.brakeMode()
+        Vision.onEnable()
     }
 
     /** This function is called once when the robot is disabled.  */
@@ -158,6 +160,7 @@ object Robot : LoggedRobot() {
         Drive.coastMode()
         Autonomous.autonomousCommand?.cancel() // This makes sure that the autonomous stops running when teleop starts running.
         Autonomous.testCommand?.cancel()
+        Vision.onDisable()
     }
 
     /** This function is called periodically when disabled.  */
