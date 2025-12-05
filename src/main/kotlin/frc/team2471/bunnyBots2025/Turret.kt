@@ -53,10 +53,14 @@ object Turret : SubsystemBase("Turret") {
     val rawLampreyAngle: Angle
         get() = candi.pwM1Position.valueAsDouble.IEEErem(1.0).rotations.wrap()
 
-    val defaultTurretEncoderOffset = 126.3
-    val defaultPivotEncoderOffset = 0.0
+    val defaultTurretEncoderOffset = -128.496
+    val defaultPivotEncoderOffset = 205.967
 
     var lampreyEncoderOffset: Double = turretEncoderOffsetEntry.getDouble(defaultTurretEncoderOffset)
+        set(value) {
+            turretEncoderOffsetEntry.setDouble(value)
+            field = value
+        }
     var pivotEncoderOffset: Double = pivotEncoderOffsetEntry.getDouble(defaultPivotEncoderOffset)
         set(value) {
             pivotEncoderOffsetEntry.setDouble(value)
@@ -85,9 +89,9 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
-        get() = turretMotorAngle + Drive.heading.measure
+        get() = Drive.heading.measure - turretMotorAngle
 
-    @get:AutoLogOutput(key = "Turret/pivotAngle")
+                @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
         get() = pivotMotor.position.valueAsDouble.rotations
 
@@ -104,9 +108,9 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle
-        get() = turretSetpoint - Drive.heading.measure
+        get() = turretSetpoint + Drive.heading.measure
         set(value) {
-            turretSetpoint = value + Drive.heading.measure
+            turretSetpoint = -Drive.heading.measure - value
         }
 
     @get:AutoLogOutput(key = "Turret/pivotEncoderAngle")
@@ -129,11 +133,15 @@ object Turret : SubsystemBase("Turret") {
 
     init {
 
+        if (!turretEncoderOffsetEntry.exists()) turretEncoderOffsetEntry.setDouble(defaultTurretEncoderOffset)
+        if (!pivotEncoderOffsetEntry.exists()) pivotEncoderOffsetEntry.setDouble(defaultPivotEncoderOffset)
+
         pivotEncoderOffsetEntry.setPersistent()
+        turretEncoderOffsetEntry.setPersistent()
 
         turretMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
-            inverted(false)
+            inverted(true)
             coastMode()
             s(0.12, StaticFeedforwardSignValue.UseVelocitySign)
             p(50.0)
@@ -160,15 +168,15 @@ object Turret : SubsystemBase("Turret") {
 //            remoteCANCoder(pivotEncoder, 216.0)
         }
 
-        turretMotor.setPosition(0.0)
-        pivotMotor.setPosition(pivotEncoder.position.valueAsDouble)
+        turretMotor.setPosition(turretEncoderAngle)
+        pivotMotor.setPosition(pivotEncoderAngle)
     }
 
     override fun periodic() {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage) {
 //            println("running ff")
-            turretFieldCentricSetpoint = turretFieldCentricSetpoint
+//            turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
@@ -194,8 +202,12 @@ object Turret : SubsystemBase("Turret") {
         ).rotateBy(Drive.heading.measure.asRotation2d)
 
         Logger.recordOutput("TurretPose", Pose2d(turretPos, turretEncoderFieldCentricAngle.asRotation2d))
+
+        Logger.recordOutput("Goal Pos", Pose2d(FieldManager.goalPose, 0.0.degrees.asRotation2d  ))
+
+        Logger.recordOutput("angle", turretPos.angleTo(FieldManager.goalPose))
 //
-//        turretFieldCentricSetpoint = turretPos.angleTo(FieldManager.goalPose)
+        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
     }
 
 }

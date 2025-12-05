@@ -37,6 +37,8 @@ object Intake: SubsystemBase("Intake") {
     private val deployPoseEntry = table.getEntry("Deploy Pose")
     private val stowPoseEntry = table.getEntry("Stow Pose")
 
+
+
     val deployMotor = TalonFX(Falcons.INTAKE_DEPLOY)
     val frontMotor = TalonFX(Falcons.INTAKE_FRONT)
     val centeringMotorRight = TalonFX(Falcons.CENTERING_RIGHT)
@@ -74,6 +76,8 @@ object Intake: SubsystemBase("Intake") {
 
     const val BULLDOZING_POWER = -0.2
     const val HOMING_POWER = 0.1
+
+    val alternateFrames: Int = 5
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {
@@ -231,7 +235,7 @@ object Intake: SubsystemBase("Intake") {
     fun alternateCenteringLogic() {
 //        val t = centeringTimer.get()
 
-        if (alternateCenteringMotors % 2 == 0) {
+        if (alternateCenteringMotors % alternateFrames < (alternateFrames / 2)) {
             centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
             centeringMotorRight.setControl(DutyCycleOut(0.0))
         } else {

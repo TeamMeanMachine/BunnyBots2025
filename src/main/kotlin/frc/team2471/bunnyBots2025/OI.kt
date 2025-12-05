@@ -88,6 +88,7 @@ object OI: SubsystemBase("OI") {
         driverController.back().onTrue({
                 println("zero gyro")
                 Drive.zeroGyro()
+                Vision.gyroReset()
             }.toCommand(Drive).ignoringDisable(true))
 
         // Reset Odometry Position
@@ -96,10 +97,11 @@ object OI: SubsystemBase("OI") {
         }.toCommand(Drive).ignoringDisable(true))
 
         driverController.leftTrigger(0.5).whileTrue(
-            parallelCommand(
-                Drive.joystickOnlyTranslationDrive(),
-                Turret.aimFieldCentricWithJoystick()
-            )
+//            parallelCommand(
+//                Drive.joystickOnlyTranslationDrive(),
+//                Turret.aimFieldCentricWithJoystick()
+//            )
+            Turret.aimAtGoal()
         )
 
         driverController.leftBumper().onTrue(runOnce {

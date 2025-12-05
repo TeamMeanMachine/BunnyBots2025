@@ -22,3 +22,10 @@ fun zeroPivot(): Command = runOnceCommand {
     println("Zeroing Pivot angle: ${Turret.pivotEncoderAngle.asDegrees}")
 
 }
+
+fun zeroTurret(): Command = runOnceCommand {
+    println("Zeroing turret. before angle: ${Turret.turretEncoderAngle}")
+    Turret.lampreyEncoderOffset = Turret.rawLampreyAngle.asDegrees
+    println("Zeroing turret. after angle: ${Turret.pivotEncoderAngle.asDegrees}")
+
+}
