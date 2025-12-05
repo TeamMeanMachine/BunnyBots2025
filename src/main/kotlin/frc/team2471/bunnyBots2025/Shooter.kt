@@ -1,13 +1,22 @@
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.SignalLogger
 import com.ctre.phoenix6.controls.DutyCycleOut
 import com.ctre.phoenix6.controls.VelocityVoltage
+import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
+import com.ctre.phoenix6.swerve.SwerveRequest.SysIdSwerveRotation
 import edu.wpi.first.networktables.NetworkTableInstance
+import edu.wpi.first.units.Units
+import edu.wpi.first.units.measure.Voltage
 import edu.wpi.first.wpilibj.Relay
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.AutoLogOutput
+import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.ctre.applyConfiguration
 import org.team2471.frc.lib.ctre.coastMode
 import org.team2471.frc.lib.ctre.currentLimits
@@ -16,6 +25,11 @@ import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.p
 import org.team2471.frc.lib.ctre.s
 import org.team2471.frc.lib.ctre.v
+import org.team2471.frc.lib.units.asVolts
+import org.team2471.frc.lib.units.rotationsPerSecond
+import org.team2471.frc.lib.units.seconds
+import org.team2471.frc.lib.units.volts
+import org.team2471.frc.lib.units.voltsPerSecond
 
 
 object Shooter: SubsystemBase("Shooter") {
@@ -31,12 +45,12 @@ object Shooter: SubsystemBase("Shooter") {
     var ramping = false
 
     @get:AutoLogOutput(key = "Shooter/Shooter Motor Right")
-    val motorRpmRight
-        get() = shooterMotorRight.velocity.valueAsDouble
+    val motorSpeedRight
+        get() = shooterMotorRight.velocity.valueAsDouble.rotationsPerSecond
 
     @get:AutoLogOutput(key = "Shooter/Shooter Motor Left")
-    val motorRpmLeft
-        get() = shooterMotorLeft.velocity.valueAsDouble
+    val motorSpeedLeft
+        get() = shooterMotorLeft.velocity.valueAsDouble.rotationsPerSecond
 
     @get:AutoLogOutput
     var rightRpmSetpoint = 0.0
@@ -96,4 +110,41 @@ object Shooter: SubsystemBase("Shooter") {
         shooterSetpoint = 0.0
         ramping = false
     }
+
+
+    val sysIDLeftRoutine = SysIdRoutine(
+        SysIdRoutine.Config(
+            1.0.voltsPerSecond,
+            7.0.volts,
+            5.0.seconds
+        ) { state: SysIdRoutineLog.State ->
+            SignalLogger.writeString("SysIdRotation_State", state.toString())
+            Logger.recordOutput("SysIdRotation_State", state.toString())
+            Logger.recordOutput("Shooter_Left_Position", shooterMotorLeft.position.valueAsDouble)
+            Logger.recordOutput("Shooter_Left_Velocity", shooterMotorLeft.velocity.valueAsDouble)
+        },
+        SysIdRoutine.Mechanism({ output: Voltage ->
+            shooterMotorLeft.setControl(VoltageOut(output.asVolts))
+            /* also log the requested output for SysId */
+            Logger.recordOutput("Shooter_Left_Voltage", output.asVolts)
+        }, null, this)
+    )
+
+    val sysIDRightRoutine = SysIdRoutine(
+        SysIdRoutine.Config(
+            1.0.voltsPerSecond,
+            7.0.volts,
+            12.0.seconds
+        ) { state: SysIdRoutineLog.State ->
+            SignalLogger.writeString("SysIdRotation_State", state.toString())
+            Logger.recordOutput("SysIdRotation_State", state.toString())
+            Logger.recordOutput("Shooter_Right_Position", shooterMotorRight.position.valueAsDouble)
+            Logger.recordOutput("Shooter_Right_Velocity", shooterMotorRight.velocity.valueAsDouble)
+        },
+        SysIdRoutine.Mechanism({ output: Voltage ->
+            shooterMotorRight.setControl(VoltageOut(output.asVolts))
+            /* also log the requested output for SysId */
+            Logger.recordOutput("Shooter_Right_Voltage", output.asVolts)
+        }, null, this)
+    )
 }

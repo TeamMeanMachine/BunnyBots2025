@@ -6,6 +6,7 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2025.3.2"
     id "org.jetbrains.kotlin.jvm" version "2.2.0"
     id "org.jetbrains.kotlin.kapt" version "2.2.0"
+    id "idea"
 }
 
 java {
@@ -53,6 +54,14 @@ deploy {
                 }
             }
         }
+    }
+}
+
+// Automatically download documentation from libraries
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
     }
 }
 

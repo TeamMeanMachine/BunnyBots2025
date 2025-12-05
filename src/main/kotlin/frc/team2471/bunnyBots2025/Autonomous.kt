@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj2.command.Command
 import frc.team2471.bunnyBots2025.tests.joystickTest
 import frc.team2471.bunnyBots2025.tests.leftRightStaticFFTest
+import frc.team2471.bunnyBots2025.tests.shooterSysIDLeft
+import frc.team2471.bunnyBots2025.tests.shooterSysIDRight
 import frc.team2471.bunnyBots2025.tests.slipCurrentTest
 import frc.team2471.bunnyBots2025.tests.velocityVoltTest
 import frc.team2471.bunnyBots2025.tests.zeroPivot
@@ -48,6 +50,8 @@ object Autonomous {
         addOption("Drive Velocity Volt Test", Drive.velocityVoltTest())
         addOption("Zero Pivot", zeroPivot())
         addOption("Zero Turret", zeroTurret())
+        addOption("Shooter sysID Left", shooterSysIDLeft())
+        addOption("Shooter sysID Right", shooterSysIDRight())
     }
 
     var selectedAuto: AutoCommand? = null

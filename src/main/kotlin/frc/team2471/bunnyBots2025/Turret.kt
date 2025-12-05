@@ -91,7 +91,7 @@ object Turret : SubsystemBase("Turret") {
     val turretMotorFieldCentricAngle: Angle
         get() = Drive.heading.measure - turretMotorAngle
 
-                @get:AutoLogOutput(key = "Turret/pivotAngle")
+    @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
         get() = pivotMotor.position.valueAsDouble.rotations
 
@@ -103,7 +103,7 @@ object Turret : SubsystemBase("Turret") {
     var turretSetpoint: Angle = turretMotorAngle
         set(value) {
             field = value.unWrap(turretMotorAngle)
-            turretMotor.setControl(MotionMagicVoltage(field.asRotations))
+            turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
         }
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
@@ -112,6 +112,14 @@ object Turret : SubsystemBase("Turret") {
         set(value) {
             turretSetpoint = -Drive.heading.measure - value
         }
+
+    @get:AutoLogOutput(key = "Turret/turretSetpointError")
+    val turretSetpointError: Angle
+        get() = turretSetpoint - turretMotorAngle
+
+    @get:AutoLogOutput(key = "Turret/turretSetpointErrorMotor")
+    val turretSetpointErrorMotor: Angle
+        get() = turretMotor.closedLoopError.valueAsDouble.rotations
 
     @get:AutoLogOutput(key = "Turret/pivotEncoderAngle")
     val pivotEncoderAngle get() = pivotEncoder.position.valueAsDouble.rotations + pivotEncoderOffset.degrees
@@ -176,7 +184,7 @@ object Turret : SubsystemBase("Turret") {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage) {
 //            println("running ff")
-//            turretFieldCentricSetpoint = turretFieldCentricSetpoint
+            turretSetpoint = turretSetpoint
         }
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
