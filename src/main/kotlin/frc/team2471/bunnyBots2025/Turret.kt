@@ -202,20 +202,24 @@ object Turret : SubsystemBase("Turret") {
     }
 
     fun aimAtGoal(): Command = runCommand {
-        turretFieldCentricSetpoint = 0.0.degrees
-
-        val turretPos = if (Vision.rawLimelightPose != Pose2d()) Vision.rawLimelightPose.translation else Drive.pose.translation - Translation2d(
+//        turretFieldCentricSetpoint = 0.0.degrees
+//
+//        val turretPos = if (Vision.rawLimelightPose != Pose2d()) Vision.rawLimelightPose.translation else Drive.pose.translation - Translation2d(
+//            TURRET_TO_ROBOT_IN.inches,
+//            0.0.inches
+//        ).rotateBy(Drive.heading.measure.asRotation2d)
+////
+//        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
+        if (Vision.aimError2d != null) {
+            turretSetpoint = turretMotorAngle + Vision.aimError2d
+        } else {
+            val turretPos = Drive.pose.translation - Translation2d(
             TURRET_TO_ROBOT_IN.inches,
             0.0.inches
         ).rotateBy(Drive.heading.measure.asRotation2d)
 
-        Logger.recordOutput("TurretPose", Pose2d(turretPos, turretEncoderFieldCentricAngle.asRotation2d))
-
-        Logger.recordOutput("Goal Pos", Pose2d(FieldManager.goalPose, 0.0.degrees.asRotation2d  ))
-
-        Logger.recordOutput("angle", turretPos.angleTo(FieldManager.goalPose))
-//
         turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
+        }
     }
 
 }

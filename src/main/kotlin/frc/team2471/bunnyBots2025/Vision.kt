@@ -4,6 +4,7 @@ import com.ctre.phoenix6.Utils
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.units.asRotation2d
@@ -20,11 +21,25 @@ object Vision : SubsystemBase() {
     val inputs = VisionIO.VisionIOInputs()
     var rawLimelightPose = Pose2d()
 
+
+    var aimError2d: Angle? = null
+
     override fun periodic() {
         io.updateInputs(inputs)
 
         if (inputs.aprilTagPoseEstimate != Pose2d()) {
             rawLimelightPose = inputs.aprilTagPoseEstimate
+
+            if (inputs.trimmedFiducials.size == 2) {
+                val avgTx = (inputs.trimmedFiducials[0].first + inputs.trimmedFiducials[1].first) / 2.0
+
+                aimError2d = avgTx.degrees
+            } else if (inputs.trimmedFiducials.size == 1) {
+                aimError2d = inputs.trimmedFiducials[0].first.degrees
+            } else {
+                aimError2d = null
+            }
+
             Logger.recordOutput("RobotPos", Pose2d(
                 rawLimelightPose.translation + Translation2d(
                     TURRET_TO_ROBOT_IN.inches,
