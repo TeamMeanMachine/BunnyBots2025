@@ -153,6 +153,7 @@ object Robot : LoggedRobot() {
         println("Enabled init $timeSinceEnabled")
         Drive.brakeMode()
         Vision.onEnable()
+        Turret.turretBrakeMode()
     }
 
     /** This function is called once when the robot is disabled.  */
@@ -161,6 +162,7 @@ object Robot : LoggedRobot() {
         Autonomous.autonomousCommand?.cancel() // This makes sure that the autonomous stops running when teleop starts running.
         Autonomous.testCommand?.cancel()
         Vision.onDisable()
+        Turret.turretCoastMode()
     }
 
     /** This function is called periodically when disabled.  */

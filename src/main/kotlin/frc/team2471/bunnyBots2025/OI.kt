@@ -122,7 +122,7 @@ object OI: SubsystemBase("OI") {
 
         driverController.rightTrigger(0.5).whileTrue(runOnce {
             Intake.intakeState = Intake.IntakeState.SHOOTING
-            Shooter.shoot()
+//            Shooter.shoot()
         })
         driverController.rightBumper().onTrue(runOnce {
             if (Shooter.ramping) {
@@ -144,6 +144,9 @@ object OI: SubsystemBase("OI") {
 
         driverController.povUp().onTrue(runOnce { Shooter.leftRpmSetpoint += 1.0; Shooter.rightRpmSetpoint += 1.0 })
         driverController.povDown().onTrue(runOnce { Shooter.leftRpmSetpoint -= 1.0; Shooter.rightRpmSetpoint -= 1.0 })
+
+        driverController.povLeft().onTrue(runOnce { Turret.pivotSetpoint += 0.25.degrees })
+        driverController.povRight().onTrue(runOnce { Turret.pivotSetpoint -= 0.25.degrees })
     }
 
     override fun periodic() {

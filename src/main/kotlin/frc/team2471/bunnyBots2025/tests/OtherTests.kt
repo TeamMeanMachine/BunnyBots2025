@@ -6,7 +6,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import frc.team2471.bunnyBots2025.OI
 import frc.team2471.bunnyBots2025.Shooter
 import frc.team2471.bunnyBots2025.Turret
-import frc.team2471.bunnyBots2025.Turret.pivotEncoder
 import org.team2471.frc.lib.control.commands.finallyWait
 import org.team2471.frc.lib.control.commands.finallyWaitUntil
 import org.team2471.frc.lib.control.commands.runCommand
@@ -25,8 +24,9 @@ fun turretPercentOutputTest(): Command = runCommand {
 }
 fun zeroPivot(): Command = runOnceCommand {
     println("Zeroing Pivot angle: ${Turret.pivotEncoderAngle.asDegrees}")
-    Turret.pivotEncoderOffset = 25.0 - pivotEncoder.position.valueAsDouble.rotations.asDegrees
+    Turret.pivotEncoderOffset = 18.0 - Turret.pivotEncoder.position.valueAsDouble.rotations.asDegrees
     println("Zeroing Pivot angle: ${Turret.pivotEncoderAngle.asDegrees}")
+    Turret.pivotMotor.setPosition(Turret.pivotEncoderAngle)
 
 }
 
@@ -34,6 +34,7 @@ fun zeroTurret(): Command = runOnceCommand {
     println("Zeroing turret. before angle: ${Turret.turretEncoderAngle}")
     Turret.lampreyEncoderOffset = Turret.rawLampreyAngle.asDegrees
     println("Zeroing turret. after angle: ${Turret.pivotEncoderAngle.asDegrees}")
+    Turret.turretMotor.setPosition(Turret.turretEncoderAngle)
 }
 
 fun shooterSysIDRight(): Command = sequenceCommand(

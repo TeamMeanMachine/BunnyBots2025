@@ -6,12 +6,17 @@ import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
+import com.ctre.phoenix6.signals.NeutralModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.math.interpolation.InterpolatingTreeMap
+import edu.wpi.first.math.interpolation.Interpolator
+import edu.wpi.first.math.interpolation.InverseInterpolator
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.measure.Angle
+import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import frc.team2471.bunnyBots2025.Vision.TURRET_TO_ROBOT_IN
@@ -19,7 +24,9 @@ import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.ctre.*
+import org.team2471.frc.lib.ctre.loggedTalonFX.LoggedTalonFX
 import org.team2471.frc.lib.units.*
+import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
 import org.team2471.frc.lib.util.angleTo
 import java.lang.reflect.Field
 import kotlin.math.IEEErem
@@ -43,7 +50,7 @@ object Turret : SubsystemBase("Turret") {
     private val pivotEncoderOffsetEntry = table.getEntry("Pivot Encoder Offset")
 
 
-    val turretMotor = TalonFX(Falcons.TURRET_0)
+    val turretMotor = LoggedTalonFX(Falcons.TURRET_0)
     val pivotMotor = TalonFX(Falcons.PIVOT, CANivores.TURRET_CAN)
     val candi = CANdi(CANSensors.CANDI, CANivores.TURRET_CAN)
     val pivotEncoder = CANcoder(CANCoders.PIVOT, CANivores.TURRET_CAN)
@@ -67,6 +74,16 @@ object Turret : SubsystemBase("Turret") {
             field = value
         }
 
+    // ty -> ??
+    val shooterRPMCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
+        put(2.45, 26.0)
+    }
+
+    // ty -> degreesz
+    val shooterPitchCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
+        put(2.45, 54.5)
+    }
+
     @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
     val unCorrectedLampreyAngle: Angle
         get() = (rawLampreyAngle - lampreyEncoderOffset.degrees)
@@ -86,6 +103,9 @@ object Turret : SubsystemBase("Turret") {
     @get:AutoLogOutput(key = "Turret/turretMotorAngle")
     val turretMotorAngle: Angle
         get() = turretMotor.position.valueAsDouble.rotations
+
+    val turretMotorAngleHistory = DynamicInterpolatingTreeMap(
+        InverseInterpolator.forDouble(), Interpolator.forDouble(), 75)
 
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
@@ -127,7 +147,7 @@ object Turret : SubsystemBase("Turret") {
     @get:AutoLogOutput(key = "Turret/pivotSetpoint")
     var pivotSetpoint: Angle = pivotAngle
         set(value) {
-            field = value.coerceIn(0.0.degrees, 45.0.degrees)
+            field = value.coerceIn(20.0.degrees, 60.0.degrees)
             pivotMotor.setControl(PositionDutyCycle(field.asRotations).withFeedForward(pivotFeedForward))
         }
 
@@ -181,6 +201,7 @@ object Turret : SubsystemBase("Turret") {
     }
 
     override fun periodic() {
+        turretMotorAngleHistory.put(Timer.getFPGATimestamp(), turretMotorAngle.asDegrees)
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage) {
 //            println("running ff")
@@ -211,15 +232,23 @@ object Turret : SubsystemBase("Turret") {
 ////
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
         if (Vision.aimError2d != null) {
-            turretSetpoint = turretMotorAngle + Vision.aimError2d
+            turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees
+                ?: turretMotorAngle) - Vision.aimError2d
         } else {
-            val turretPos = Drive.pose.translation - Translation2d(
-            TURRET_TO_ROBOT_IN.inches,
-            0.0.inches
-        ).rotateBy(Drive.heading.measure.asRotation2d)
-
-        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
+//            val turretPos = Drive.pose.translation - Translation2d(
+//            TURRET_TO_ROBOT_IN.inches,
+//            0.0.inches
+//        ).rotateBy(Drive.heading.measure.asRotation2d)
+//
+//        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
         }
+    }
+
+    fun turretBrakeMode() {
+        turretMotor.brakeMode()
+    }
+    fun turretCoastMode() {
+        turretMotor.coastMode()
     }
 
 }
