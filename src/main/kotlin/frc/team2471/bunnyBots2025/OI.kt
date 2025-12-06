@@ -9,6 +9,7 @@ import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
 import org.team2471.frc.lib.control.commands.parallelCommand
 import org.team2471.frc.lib.control.commands.toCommand
+import org.team2471.frc.lib.control.dPad
 import org.team2471.frc.lib.control.rightBumper
 import org.team2471.frc.lib.math.deadband
 import org.team2471.frc.lib.math.normalize
@@ -139,6 +140,10 @@ object OI: SubsystemBase("OI") {
 //        driverController.a().onTrue(runOnce { Turret.pivotSetpoint = 5.0.degrees; println(Turret.pivotSetpoint) })
 
 //        driverController.start().onTrue(runOnce { Drive.resetOdometryToAbsolute() })
+
+
+        driverController.povUp().onTrue(runOnce { Shooter.leftRpmSetpoint += 1.0; Shooter.rightRpmSetpoint += 1.0 })
+        driverController.povDown().onTrue(runOnce { Shooter.leftRpmSetpoint -= 1.0; Shooter.rightRpmSetpoint -= 1.0 })
     }
 
     override fun periodic() {

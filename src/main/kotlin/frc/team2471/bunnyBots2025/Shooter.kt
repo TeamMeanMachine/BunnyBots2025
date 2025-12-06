@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
+import org.team2471.frc.lib.ctre.a
 import org.team2471.frc.lib.ctre.applyConfiguration
 import org.team2471.frc.lib.ctre.coastMode
 import org.team2471.frc.lib.ctre.currentLimits
@@ -84,20 +85,22 @@ object Shooter: SubsystemBase("Shooter") {
             inverted(true)
             coastMode()
 
-            p(0.25)
-            d(0.005)
-            v(0.12)
-            s(0.17, StaticFeedforwardSignValue.UseVelocitySign)
+            p(0.1746)
+            d(0.0)
+            a(0.0413)
+            v(0.117)
+            s(0.177, StaticFeedforwardSignValue.UseVelocitySign)
         }
         shooterMotorLeft.applyConfiguration {
             currentLimits(25.0,40.0,1.0)
             inverted(false)
             coastMode()
 
-            p(0.25)
-            d(0.005)
-            v(0.12)
-            s(0.17, StaticFeedforwardSignValue.UseVelocitySign)
+            p(0.1748)
+            d(0.0)
+            a(0.0417)
+            v(0.114)
+            s(0.09, StaticFeedforwardSignValue.UseVelocitySign)
         }
     }
 
@@ -118,15 +121,15 @@ object Shooter: SubsystemBase("Shooter") {
             7.0.volts,
             5.0.seconds
         ) { state: SysIdRoutineLog.State ->
-            SignalLogger.writeString("SysIdRotation_State", state.toString())
-            Logger.recordOutput("SysIdRotation_State", state.toString())
+            SignalLogger.writeString("SysIdShooterLeft_State", state.toString())
+            Logger.recordOutput("SysIdShooterLeft_State", state.toString())
             Logger.recordOutput("Shooter_Left_Position", shooterMotorLeft.position.valueAsDouble)
             Logger.recordOutput("Shooter_Left_Velocity", shooterMotorLeft.velocity.valueAsDouble)
         },
         SysIdRoutine.Mechanism({ output: Voltage ->
             shooterMotorLeft.setControl(VoltageOut(output.asVolts))
             /* also log the requested output for SysId */
-            Logger.recordOutput("Shooter_Left_Voltage", output.asVolts)
+            Logger.recordOutput("Shooter_Left_Voltage", output.asVolts + 0.0001 * Math.random())
         }, null, this)
     )
 
@@ -136,15 +139,15 @@ object Shooter: SubsystemBase("Shooter") {
             7.0.volts,
             12.0.seconds
         ) { state: SysIdRoutineLog.State ->
-            SignalLogger.writeString("SysIdRotation_State", state.toString())
-            Logger.recordOutput("SysIdRotation_State", state.toString())
+            SignalLogger.writeString("SysIdShooterRight_State", state.toString())
+            Logger.recordOutput("SysIdShooterRight_State", state.toString())
             Logger.recordOutput("Shooter_Right_Position", shooterMotorRight.position.valueAsDouble)
             Logger.recordOutput("Shooter_Right_Velocity", shooterMotorRight.velocity.valueAsDouble)
         },
         SysIdRoutine.Mechanism({ output: Voltage ->
             shooterMotorRight.setControl(VoltageOut(output.asVolts))
             /* also log the requested output for SysId */
-            Logger.recordOutput("Shooter_Right_Voltage", output.asVolts)
+            Logger.recordOutput("Shooter_Right_Voltage", output.asVolts + 0.0001 * Math.random())
         }, null, this)
     )
 }
