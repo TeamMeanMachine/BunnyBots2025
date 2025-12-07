@@ -22,7 +22,9 @@ import org.team2471.frc.lib.units.asSeconds
 import org.team2471.frc.lib.math.round
 import org.team2471.frc.lib.control.commands.toCommand
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser
+import org.team2471.frc.lib.control.commands.finallyWait
 import org.team2471.frc.lib.control.commands.parallelCommand
+import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.control.commands.runOnce
 import org.team2471.frc.lib.control.commands.runOnceCommand
 import org.team2471.frc.lib.control.commands.sequenceCommand
@@ -40,6 +42,8 @@ object Autonomous {
         addOption("8 Foot Straight", AutoCommand(eightFootStraight()))
         addOption("6x6 Square", AutoCommand(squarePathTest()))
         addOption("Left to Center", AutoCommand(leftToCenter()))
+        addOption("Cycle Center Left", AutoCommand(cycleCenterLeft()))
+        addOption("Cycle Center Right", AutoCommand(cycleCenterRight()))
     }
     // Chooser for test commands
     private val testChooser: LoggedDashboardChooser<Command?> = LoggedDashboardChooser<Command?>("Test Chooser").apply {
@@ -193,6 +197,60 @@ object Autonomous {
                         Intake.intakeState = Intake.IntakeState.SHOOTING
                     }
                 )
+            )
+        )
+    }
+
+    private fun cycleCenterLeft(): Command {
+        val path = paths["CycleCenterLeft"]!!
+        return parallelCommand (
+            Turret.aimAtGoal(),
+            sequenceCommand(
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
+                    Intake.home()
+                ),
+                runOnce {
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }.finallyWait(2.5),
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(1).get()),
+                    runOnce {
+                        Intake.deploy()
+                        Intake.intakeState = Intake.IntakeState.INTAKING
+                    }
+                ),
+                runOnce {
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }.finallyWait(2.5),
+                Drive.driveAlongChoreoPath(path.getSplit(2).get())
+            )
+        )
+    }
+
+    private fun cycleCenterRight(): Command {
+        val path = paths["CycleCenterRight"]!!
+        return parallelCommand (
+            Turret.aimAtGoal(),
+            sequenceCommand(
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
+                    Intake.home()
+                ),
+                runOnce {
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }.finallyWait(2.5),
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(1).get()),
+                    runOnce {
+                        Intake.deploy()
+                        Intake.intakeState = Intake.IntakeState.INTAKING
+                    }
+                ),
+                runOnce {
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }.finallyWait(2.5),
+                Drive.driveAlongChoreoPath(path.getSplit(2).get())
             )
         )
     }

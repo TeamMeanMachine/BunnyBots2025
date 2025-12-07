@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.GenericHID
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
+import org.team2471.frc.lib.control.commands.finallyRun
 import org.team2471.frc.lib.control.commands.parallelCommand
 import org.team2471.frc.lib.control.commands.toCommand
 import org.team2471.frc.lib.control.dPad
@@ -122,14 +123,14 @@ object OI: SubsystemBase("OI") {
             }
         })*/
 
-        driverController.rightTrigger(0.5).whileTrue(runOnce {
+        driverController.rightTrigger(0.5).whileTrue(run {
             if (Vision.seeTags) {
                 Intake.intakeState = Intake.IntakeState.SHOOTING
             } else {
                 Intake.intakeState = Intake.IntakeState.INTAKING
             }
 //            Shooter.shoot()
-        })
+        }.finallyRun { Intake.intakeState = Intake.IntakeState.HOLDING })
         driverController.rightBumper().onTrue(runOnce {
             if (Shooter.ramping) {
                 Shooter.stop()

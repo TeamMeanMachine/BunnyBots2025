@@ -44,7 +44,7 @@ object TunerConstants {
 
     private const val driveGearRatio = 6.746031746031747
     private const val steerGearRatio = 21.428571428571427
-    private const val wheelRadiusInches = 2.0 * 0.950495049505
+    private const val wheelRadiusInches = 2.0 * 0.950495049505 * (9.33 / 8.0)
 
     // The steer motor uses any SwerveModule.SteerRequestType control request with the
     // output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput

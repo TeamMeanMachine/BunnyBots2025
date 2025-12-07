@@ -5,18 +5,18 @@
  "variables":{
   "expressions":{},
   "poses":{
-   "Intake":{
+   "LeftShootLocation":{
     "x":{
-     "exp":"1.508599042892456 m",
-     "val":1.508599042892456
+     "exp":"5.45 m",
+     "val":5.45
     },
     "y":{
-     "exp":"1.155701994895935 m",
-     "val":1.155701994895935
+     "exp":"4.76 m",
+     "val":4.76
     },
     "heading":{
-     "exp":"54 deg",
-     "val":0.942477796076938
+     "exp":"0 deg",
+     "val":0.0
     }
    }
   }
