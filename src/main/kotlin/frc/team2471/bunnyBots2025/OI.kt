@@ -122,7 +122,11 @@ object OI: SubsystemBase("OI") {
         })*/
 
         driverController.rightTrigger(0.5).whileTrue(runOnce {
-            Intake.intakeState = Intake.IntakeState.SHOOTING
+            if (Vision.seeTags) {
+                Intake.intakeState = Intake.IntakeState.SHOOTING
+            } else {
+                Intake.intakeState = Intake.IntakeState.INTAKING
+            }
 //            Shooter.shoot()
         })
         driverController.rightBumper().onTrue(runOnce {

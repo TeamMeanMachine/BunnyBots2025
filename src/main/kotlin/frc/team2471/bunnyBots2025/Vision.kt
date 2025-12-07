@@ -2,6 +2,7 @@ package frc.team2471.bunnyBots2025
 
 import com.ctre.phoenix6.Utils
 import edu.wpi.first.math.VecBuilder
+import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
@@ -41,6 +42,13 @@ object Vision : SubsystemBase() {
 
     val tyFilter = LinearFilter.movingAverage(5)
 
+    @get:AutoLogOutput(key = "seeTags")
+    var seeTags = false
+        get() = seeTagsDebouncer.calculate(seeTagsRaw)
+
+    private val seeTagsDebouncer = Debouncer(0.5)
+    private var seeTagsRaw = false
+
     @get:AutoLogOutput(key = "filtered ty")
     var filteredTy: Double = 1000.0
 
@@ -54,10 +62,13 @@ object Vision : SubsystemBase() {
                 val avgTx = (inputs.trimmedFiducials[0].second.first + inputs.trimmedFiducials[1].second.first) / 2.0
 
                 aimError2d = avgTx.degrees
+                seeTagsRaw = true
             } else if (inputs.trimmedFiducials.size == 1) {
                 aimError2d = inputs.trimmedFiducials[0].second.first.degrees
+                seeTagsRaw = true
             } else {
                 aimError2d = null
+                seeTagsRaw = false
             }
 
             Logger.recordOutput("RobotPos", Pose2d(
