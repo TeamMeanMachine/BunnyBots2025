@@ -4,6 +4,7 @@ import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.wpilibj.Alert
+import edu.wpi.first.wpilibj.GenericHID
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
@@ -158,6 +159,13 @@ object OI: SubsystemBase("OI") {
         LoopLogger.record("b4 OI piodc")
         driverNotConnectedAlert.set(driverDebouncer.calculate(driverController.isConnected))
         operatorNotConnectedAlert.set(operatorDebouncer.calculate(operatorController.isConnected))
+
+        if (Intake.intakeState == Intake.IntakeState.INTAKING) {
+            driverController.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
+        } else {
+            driverController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
+        }
+
         LoopLogger.record("OI piodc")
     }
 }
