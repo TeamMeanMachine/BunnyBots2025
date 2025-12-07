@@ -78,38 +78,35 @@ object Turret : SubsystemBase("Turret") {
 
     // ty -> rps??
     val shooterRPMCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(50.0, 19.0)
         put(2.5, 19.0)
+        put(-0.1, 20.0)
         put(-2.6, 22.0)
         put(-4.8, 26.0)
         put(-6.9, 30.0)
         put(-9.25, 35.0)
-        put(-50.0, 35.0)
-
     }
 
     // ty -> degreesz
     val shooterPitchCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(50.0, 50.0)
         put(2.5, 50.0)
+        put(-0.1, 50.0)
         put(-2.6, 48.1)
         put(-4.8, 34.9)
         put(-6.9, 34.9)
         put(-9.25, 32.7)
-        put(-50.0, 32.7)
     }
 
     val horizontalOffsetEntry = table.getEntry("Horizontal Offset")
     val horizontalOffset get() = horizontalOffsetEntry.getDouble(0.0)
 
+    // ty -> degrees
     val horizontalOffsetCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(50.0, -3.5)
-        put(2.5, -3.5)
-        put(-2.6, -3.5)
+        put(-0.1, 20.0)
+        put(2.5, 20.0)
+        put(-2.6, 0.0)
         put(-4.8, 0.0)
         put(-6.9, -2.5)
         put(-9.25, -2.5)
-        put(-50.0, -2.5)
     }
 
     @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
@@ -272,7 +269,7 @@ object Turret : SubsystemBase("Turret") {
         val camError = Vision.aimError2d
         if (camError != null) {
             val tagDistance = Vision.tagDistance
-            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + horizontalOffset.degrees //if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
             Logger.recordOutput("Turret/aimError", aimError)
             turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
         } else {
@@ -284,11 +281,11 @@ object Turret : SubsystemBase("Turret") {
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
         }
 
-        if (Vision.filteredTy <= 50.0) {
-            pivotSetpoint = shooterPitchCurve.get(Vision.filteredTy).degrees
-            Shooter.leftRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
-            Shooter.rightRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
-        }
+//        if (Vision.filteredTy <= 50.0) {
+//            pivotSetpoint = shooterPitchCurve.get(Vision.filteredTy).degrees
+//            Shooter.leftRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
+//            Shooter.rightRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
+//        }
     }
 
     fun turretBrakeMode() {

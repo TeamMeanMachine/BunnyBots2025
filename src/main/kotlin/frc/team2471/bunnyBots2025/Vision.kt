@@ -11,14 +11,14 @@ import edu.wpi.first.units.measure.Distance
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
-import org.team2471.frc.lib.units.asFeet
+import org.team2471.frc.lib.units.asInches
 import org.team2471.frc.lib.units.asRotation2d
+import org.team2471.frc.lib.units.atan
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.units.tan
 import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
-import kotlin.math.PI
 
 object Vision : SubsystemBase() {
     val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }
@@ -40,20 +40,25 @@ object Vision : SubsystemBase() {
 
     var oldty: Double = ty
 
-    val tyFilter = LinearFilter.movingAverage(5)
+    val tyFilter = LinearFilter.singlePoleIIR(0.1, 0.02)
 
     @get:AutoLogOutput(key = "seeTags")
     var seeTags = false
-        get() = seeTagsDebouncer.calculate(seeTagsRaw)
 
     private val seeTagsDebouncer = Debouncer(0.5)
     private var seeTagsRaw = false
+        set(value) {
+            seeTags = seeTagsDebouncer.calculate(value)
+            field = value
+        }
 
     @get:AutoLogOutput(key = "filtered ty")
     var filteredTy: Double = 1000.0
 
     override fun periodic() {
         io.updateInputs(inputs)
+
+        seeTagsRaw = inputs.seesTag
 
         if (inputs.aprilTagPoseEstimate != Pose2d()) {
             rawLimelightPose = inputs.aprilTagPoseEstimate
@@ -62,13 +67,10 @@ object Vision : SubsystemBase() {
                 val avgTx = (inputs.trimmedFiducials[0].second.first + inputs.trimmedFiducials[1].second.first) / 2.0
 
                 aimError2d = avgTx.degrees
-                seeTagsRaw = true
             } else if (inputs.trimmedFiducials.size == 1) {
                 aimError2d = inputs.trimmedFiducials[0].second.first.degrees
-                seeTagsRaw = true
             } else {
                 aimError2d = null
-                seeTagsRaw = false
             }
 
             Logger.recordOutput("RobotPos", Pose2d(
@@ -101,6 +103,10 @@ object Vision : SubsystemBase() {
 
         }
 
+    }
+
+    fun distanceToTy(distance: Distance): Angle {
+        return atan(20.0/distance.asInches) - 15.0.degrees
     }
 
     fun gyroReset() {
