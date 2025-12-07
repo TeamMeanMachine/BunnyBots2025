@@ -2,9 +2,11 @@ package frc.team2471.bunnyBots2025
 
 import com.ctre.phoenix6.Utils
 import edu.wpi.first.math.VecBuilder
+import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.units.measure.Angle
+import edu.wpi.first.units.measure.Distance
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
@@ -15,6 +17,7 @@ import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.units.tan
 import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
+import kotlin.math.PI
 
 object Vision : SubsystemBase() {
     val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }
@@ -27,6 +30,19 @@ object Vision : SubsystemBase() {
 
     @get:AutoLogOutput(key = "error")
     var aimError2d: Angle? = null
+
+    @get:AutoLogOutput(key = "tag distance")
+    var tagDistance: Distance = Double.MAX_VALUE.inches
+
+    @get:AutoLogOutput(key = "ty")
+    var ty: Double = 1000.0
+
+    var oldty: Double = ty
+
+    val tyFilter = LinearFilter.movingAverage(5)
+
+    @get:AutoLogOutput(key = "filtered ty")
+    var filteredTy: Double = 1000.0
 
     override fun periodic() {
         io.updateInputs(inputs)
@@ -61,9 +77,16 @@ object Vision : SubsystemBase() {
                 ),
                 Utils.fpgaToCurrentTime(inputs.aprilTagTimestamp), VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
             )
-
-            Logger.recordOutput("ty", inputs.trimmedFiducials[0].second.second)
-            Logger.recordOutput("dist", (20.0.inches / tan((15.0 + inputs.trimmedFiducials[0].second.second).degrees)).asFeet)
+            val trimmedFiducials = inputs.trimmedFiducials
+            if (trimmedFiducials.isNotEmpty()) {
+                ty = trimmedFiducials[0].second.second
+                oldty = ty
+                filteredTy = tyFilter.calculate(ty)
+                tagDistance = 20.0.inches / tan((15.0 + trimmedFiducials[0].second.second).degrees)
+            } else {
+                ty = 1000.0
+                filteredTy = tyFilter.calculate(oldty)
+            }
 
         }
 

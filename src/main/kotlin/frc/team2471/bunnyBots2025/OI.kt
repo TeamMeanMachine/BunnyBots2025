@@ -112,13 +112,14 @@ object OI: SubsystemBase("OI") {
                 Intake.intakeState = Intake.IntakeState.HOLDING
             }
         })
-        driverController.a().onTrue(runOnce {
+        driverController.a().whileTrue(spinnySpit())/* {
+
             if (Intake.intakeState != Intake.IntakeState.REVERSING) {
                 Intake.intakeState = Intake.IntakeState.REVERSING
             } else {
                 Intake.intakeState = Intake.IntakeState.HOLDING
             }
-        })
+        })*/
 
         driverController.rightTrigger(0.5).whileTrue(runOnce {
             Intake.intakeState = Intake.IntakeState.SHOOTING

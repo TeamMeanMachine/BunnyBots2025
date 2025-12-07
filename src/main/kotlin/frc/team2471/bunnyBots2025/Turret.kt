@@ -2,6 +2,7 @@ package frc.team2471.bunnyBots2025
 
 import com.ctre.phoenix6.controls.MotionMagicVoltage
 import com.ctre.phoenix6.controls.PositionDutyCycle
+import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
@@ -31,6 +32,7 @@ import org.team2471.frc.lib.util.angleTo
 import java.lang.reflect.Field
 import kotlin.math.IEEErem
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.sin
 
 
@@ -74,14 +76,40 @@ object Turret : SubsystemBase("Turret") {
             field = value
         }
 
-    // ty -> ??
+    // ty -> rps??
     val shooterRPMCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(2.45, 26.0)
+        put(50.0, 19.0)
+        put(2.5, 19.0)
+        put(-2.6, 22.0)
+        put(-4.8, 26.0)
+        put(-6.9, 30.0)
+        put(-9.25, 35.0)
+        put(-50.0, 35.0)
+
     }
 
     // ty -> degreesz
     val shooterPitchCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(2.45, 54.5)
+        put(50.0, 50.0)
+        put(2.5, 50.0)
+        put(-2.6, 48.1)
+        put(-4.8, 34.9)
+        put(-6.9, 34.9)
+        put(-9.25, 32.7)
+        put(-50.0, 32.7)
+    }
+
+    val horizontalOffsetEntry = table.getEntry("Horizontal Offset")
+    val horizontalOffset get() = horizontalOffsetEntry.getDouble(0.0)
+
+    val horizontalOffsetCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
+        put(50.0, -3.5)
+        put(2.5, -3.5)
+        put(-2.6, -3.5)
+        put(-4.8, 0.0)
+        put(-6.9, -2.5)
+        put(-9.25, -2.5)
+        put(-50.0, -2.5)
     }
 
     @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
@@ -117,13 +145,17 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretFeedforward")
     val turretFeedforward: Double
-        get() = 0.0//Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 0.01
+        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 10.0
 
     @get:AutoLogOutput(key = "Turret/turretSetpoint")
     var turretSetpoint: Angle = turretMotorAngle
         set(value) {
             field = value.unWrap(turretMotorAngle)
-            turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
+            if ((turretMotorAngle - field).asDegrees.absoluteValue < 90.0) {
+                turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
+            } else {
+                turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
+            }
         }
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
@@ -140,6 +172,10 @@ object Turret : SubsystemBase("Turret") {
     @get:AutoLogOutput(key = "Turret/turretSetpointErrorMotor")
     val turretSetpointErrorMotor: Angle
         get() = turretMotor.closedLoopError.valueAsDouble.rotations
+
+    @get:AutoLogOutput(key = "Turret/turretMotorVoltage")
+    val turretMotorVoltage: Double
+        get() = turretMotor.motorVoltage.valueAsDouble
 
     @get:AutoLogOutput(key = "Turret/pivotEncoderAngle")
     val pivotEncoderAngle get() = pivotEncoder.position.valueAsDouble.rotations + pivotEncoderOffset.degrees
@@ -167,17 +203,19 @@ object Turret : SubsystemBase("Turret") {
         pivotEncoderOffsetEntry.setPersistent()
         turretEncoderOffsetEntry.setPersistent()
 
+        horizontalOffsetEntry.setDouble(0.0)
+
         turretMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
             inverted(true)
             coastMode()
-            s(0.12, StaticFeedforwardSignValue.UseVelocitySign)
+            s(0.13, StaticFeedforwardSignValue.UseClosedLoopSign)
             p(50.0)
 
 
 
             Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
-            motionMagic(1.2, 6.2)
+            motionMagic(2.1, 12.2)
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
@@ -203,7 +241,7 @@ object Turret : SubsystemBase("Turret") {
     override fun periodic() {
         turretMotorAngleHistory.put(Timer.getFPGATimestamp(), turretMotorAngle.asDegrees)
         // Are the motors running position control loops? Update the custom feedforward
-        if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage) {
+        if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage || turretMotor.controlMode.value == ControlModeValue.PositionVoltage) {
 //            println("running ff")
             turretSetpoint = turretSetpoint
         }
@@ -231,9 +269,12 @@ object Turret : SubsystemBase("Turret") {
 //        ).rotateBy(Drive.heading.measure.asRotation2d)
 ////
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
-        if (Vision.aimError2d != null) {
-            turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees
-                ?: turretMotorAngle) - Vision.aimError2d
+        val camError = Vision.aimError2d
+        if (camError != null) {
+            val tagDistance = Vision.tagDistance
+            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+            Logger.recordOutput("Turret/aimError", aimError)
+            turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
         } else {
 //            val turretPos = Drive.pose.translation - Translation2d(
 //            TURRET_TO_ROBOT_IN.inches,
@@ -241,6 +282,12 @@ object Turret : SubsystemBase("Turret") {
 //        ).rotateBy(Drive.heading.measure.asRotation2d)
 //
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
+        }
+
+        if (Vision.filteredTy <= 50.0) {
+            pivotSetpoint = shooterPitchCurve.get(Vision.filteredTy).degrees
+            Shooter.leftRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
+            Shooter.rightRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
         }
     }
 

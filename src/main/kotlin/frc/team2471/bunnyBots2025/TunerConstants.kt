@@ -98,15 +98,15 @@ object TunerConstants {
               */
             DriveMotorInitialConfigs = TalonFXConfiguration().apply {
                 CurrentLimits.apply {
-                    SupplyCurrentLimit = 60.0
-                    SupplyCurrentLowerLimit = 35.0
+                    SupplyCurrentLimit = 40.0
+                    SupplyCurrentLowerLimit = 25.0
                     SupplyCurrentLowerTime = 1.0
                     SupplyCurrentLimitEnable = true
                 }
             }
             SteerMotorInitialConfigs = TalonFXConfiguration().apply {
                 CurrentLimits.apply{
-                    SupplyCurrentLimit = 35.0
+                    SupplyCurrentLimit = 20.0
                     SupplyCurrentLimitEnable = true
                 }
             }
