@@ -84,7 +84,7 @@ object Intake: SubsystemBase("Intake") {
             field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             frontMotor.setControl(DutyCycleOut(field))
         }
-    var topCentringPowerSetpoint: Double = 0.0
+    var topCenteringPowerSetpoint: Double = 0.0
         set(value) {
             field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             centeringMotorTop.setControl(DutyCycleOut(field))
@@ -187,7 +187,7 @@ object Intake: SubsystemBase("Intake") {
 //                    centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
 //                    centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 }
-                topCentringPowerSetpoint = TOP_CENTERING_POWER
+                topCenteringPowerSetpoint = TOP_CENTERING_POWER
 
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
@@ -197,7 +197,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = 0.0
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
                 centeringMotorRight.setControl(DutyCycleOut(0.0))
-                topCentringPowerSetpoint = 0.0
+                topCenteringPowerSetpoint = 0.0
                 cycloneMotor.setControl(DutyCycleOut(0.0))
                 shooterFeederMotor.setControl(DutyCycleOut(0.0))
             }
@@ -206,7 +206,7 @@ object Intake: SubsystemBase("Intake") {
                 frontIntakePowerSetpoint = -INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
-                topCentringPowerSetpoint = -TOP_CENTERING_POWER
+                topCenteringPowerSetpoint = -TOP_CENTERING_POWER
                 cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
                 shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
             }
@@ -216,7 +216,7 @@ object Intake: SubsystemBase("Intake") {
 //                centeringMotorLeft.setControl(DutyCycleOut(LEFT_CENTERING_POWER))
 //                centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 alternateCenteringLogic()
-                topCentringPowerSetpoint = TOP_CENTERING_POWER
+                topCenteringPowerSetpoint = TOP_CENTERING_POWER
                 cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
                 shooterFeederMotor.setControl(DutyCycleOut(SHOOTER_FEEDER_POWER))
             }
@@ -224,7 +224,7 @@ object Intake: SubsystemBase("Intake") {
             IntakeState.BULLDOZING -> {
                 frontIntakePowerSetpoint = BULLDOZING_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
-                topCentringPowerSetpoint = 0.0
+                topCenteringPowerSetpoint = 0.0
             }
         }
 
