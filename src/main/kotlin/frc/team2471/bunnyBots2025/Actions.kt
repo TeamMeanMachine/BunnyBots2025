@@ -25,3 +25,19 @@ fun spinnySpit(): Command {
     )
 }
 
+fun spinnyPartialSpit(): Command {
+    var initTurretAngle = 0.0.degrees
+    return sequenceCommand(
+        runOnce {
+            initTurretAngle = Turret.turretMotorAngle
+        },
+        runCommand(Turret) {
+            Turret.turretMotor.setControl(DutyCycleOut(0.2))
+            Intake.intakeState = Intake.IntakeState.PARTIAL_REVERSE
+        }.finallyRun {
+            Turret.turretSetpoint = initTurretAngle
+            Intake.intakeState = Intake.IntakeState.HOLDING
+        }
+    )
+}
+

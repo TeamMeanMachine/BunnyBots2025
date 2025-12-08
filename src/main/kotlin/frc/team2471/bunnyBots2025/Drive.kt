@@ -164,6 +164,8 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
             }
         }
 
+        Vision.poseEstimator.update(heading, modulePositions)
+
         LoopLogger.record("b4 Drive piodc")
         super.periodic() // Must call this
         LoopLogger.record("super Drive piodc")

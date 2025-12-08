@@ -2,11 +2,13 @@ package frc.team2471.bunnyBots2025
 
 import com.ctre.phoenix6.controls.DutyCycleOut
 import com.ctre.phoenix6.controls.MotionMagicDutyCycle
+import com.ctre.phoenix6.controls.VelocityVoltage
 import com.ctre.phoenix6.hardware.CANrange
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.networktables.NetworkTableInstance
+import edu.wpi.first.units.measure.AngularVelocity
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
@@ -25,6 +27,10 @@ import org.team2471.frc.lib.ctre.inverted
 import org.team2471.frc.lib.ctre.motionMagic
 import org.team2471.frc.lib.ctre.p
 import org.team2471.frc.lib.ctre.s
+import org.team2471.frc.lib.ctre.v
+import org.team2471.frc.lib.units.degreesPerSecond
+import org.team2471.frc.lib.units.rotations
+import org.team2471.frc.lib.units.rotationsPerSecond
 
 object Intake: SubsystemBase("Intake") {
     private val table = NetworkTableInstance.getDefault().getTable("Intake")
@@ -74,10 +80,13 @@ object Intake: SubsystemBase("Intake") {
     val CYCLONE_POWER get() = cycloneFeedPowerEntry.getDouble(1.0)
     val SHOOTER_FEEDER_POWER get() = shooterFeedPowerEntry.getDouble(1.0)
 
+    val CYCLONE_SPEED: AngularVelocity
+        get() = 95.0.rotationsPerSecond * CYCLONE_POWER
+
     const val BULLDOZING_POWER = -0.2
     const val HOMING_POWER = 0.1
 
-    val alternateFrames: Int = 5
+    val alternateFrames: Int = 20
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {
@@ -89,6 +98,20 @@ object Intake: SubsystemBase("Intake") {
             field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             centeringMotorTop.setControl(DutyCycleOut(field))
         }
+
+
+    var cycloneVelocitySetpoint: AngularVelocity = 0.0.degreesPerSecond
+        set(value) {
+            field = value
+            cycloneMotor.setControl(VelocityVoltage(field))
+        }
+
+    @get:AutoLogOutput(key = "Intake/Cyclone Velocity")
+    val cycloneVelocity: AngularVelocity
+        get() = cycloneMotor.velocity.valueAsDouble.rotationsPerSecond
+    @get:AutoLogOutput(key = "Intake/Cyclone Voltage")
+    val cycloneVoltage: Double
+        get() = cycloneMotor.motorVoltage.valueAsDouble
 
     @get:AutoLogOutput(key = "Intake/Current State")
     var intakeState = IntakeState.HOLDING
@@ -145,6 +168,9 @@ object Intake: SubsystemBase("Intake") {
         cycloneMotor.applyConfiguration {
             currentLimits(39.0, 50.0, 0.5)
             coastMode()
+            s(0.12, StaticFeedforwardSignValue.UseVelocitySign)
+            v(0.126)
+            p(1.0)
         }
         shooterFeederMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
@@ -207,7 +233,18 @@ object Intake: SubsystemBase("Intake") {
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
                 topCenteringPowerSetpoint = -TOP_CENTERING_POWER
-                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
+//                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
+                cycloneVelocitySetpoint = -CYCLONE_SPEED
+                shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
+            }
+
+            IntakeState.PARTIAL_REVERSE -> {
+                frontIntakePowerSetpoint = 0.0
+                centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
+                centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
+                topCenteringPowerSetpoint = -TOP_CENTERING_POWER
+//                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
+                cycloneVelocitySetpoint = -CYCLONE_SPEED
                 shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
             }
 
@@ -217,14 +254,18 @@ object Intake: SubsystemBase("Intake") {
 //                centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 alternateCenteringLogic()
                 topCenteringPowerSetpoint = TOP_CENTERING_POWER
-                cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
+//                cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
+                cycloneVelocitySetpoint = CYCLONE_SPEED
                 shooterFeederMotor.setControl(DutyCycleOut(SHOOTER_FEEDER_POWER))
             }
 
             IntakeState.BULLDOZING -> {
-                frontIntakePowerSetpoint = BULLDOZING_POWER
+                frontIntakePowerSetpoint = -INTAKE_POWER
                 centeringMotorLeft.setControl(DutyCycleOut(0.0))
+                centeringMotorRight.setControl(DutyCycleOut(0.0))
                 topCenteringPowerSetpoint = 0.0
+                cycloneMotor.setControl(DutyCycleOut(0.0))
+                shooterFeederMotor.setControl(DutyCycleOut(0.0))
             }
         }
 
@@ -250,6 +291,7 @@ object Intake: SubsystemBase("Intake") {
         HOLDING,
         REVERSING,
         SHOOTING,
+        PARTIAL_REVERSE,
         BULLDOZING
     }
 }

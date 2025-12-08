@@ -9,6 +9,7 @@ import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
+import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
@@ -30,6 +31,7 @@ import org.team2471.frc.lib.units.*
 import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
 import org.team2471.frc.lib.util.angleTo
 import java.lang.reflect.Field
+import kotlin.compareTo
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -80,7 +82,7 @@ object Turret : SubsystemBase("Turret") {
     val shooterRPMCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
         put(2.5, 19.0)
         put(-0.1, 20.0)
-        put(-2.6, 22.0)
+        put(-3.0, 26.0)
         put(-4.8, 26.0)
         put(-6.9, 30.0)
         put(-9.25, 35.0)
@@ -90,7 +92,7 @@ object Turret : SubsystemBase("Turret") {
     val shooterPitchCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
         put(2.5, 50.0)
         put(-0.1, 50.0)
-        put(-2.6, 48.1)
+        put(-3.0, 48.5)
         put(-4.8, 34.9)
         put(-6.9, 34.9)
         put(-9.25, 32.7)
@@ -101,13 +103,16 @@ object Turret : SubsystemBase("Turret") {
 
     // ty -> degrees
     val horizontalOffsetCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(-0.1, 20.0)
-        put(2.5, 20.0)
-        put(-2.6, 0.0)
+        put(-0.1, 0.0)
+        put(2.5, 0.0)
+        put(-3.0, 0.0)
         put(-4.8, 0.0)
         put(-6.9, -2.5)
         put(-9.25, -2.5)
     }
+
+    val joystickAimFilter = LinearFilter.singlePoleIIR(0.2, 0.02)
+
 
     @get:AutoLogOutput(key = "Turret/unCorrectedLampreyAngle")
     val unCorrectedLampreyAngle: Angle
@@ -134,7 +139,7 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
-        get() = Drive.heading.measure - turretMotorAngle
+        get() = turretMotorAngle + Drive.heading.measure
 
     @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
@@ -248,16 +253,18 @@ object Turret : SubsystemBase("Turret") {
     }
 
 
-    fun aimFieldCentricWithJoystick(): Command = runCommand {
+    fun aimFieldCentricWithJoystick(): Command = runCommand(this) {
         val joystickTranslation = Translation2d(-OI.driverController.rightY, OI.driverController.rightX)
         if (joystickTranslation.norm > 0.25) {
-            val wantedAngle = joystickTranslation.angle.measure - Drive.heading.measure
-            println("wantedAngle: ${wantedAngle.asDegrees}")
-            turretFieldCentricSetpoint = wantedAngle
+            val wantedAngle = joystickTranslation.angle.measure
+            Logger.recordOutput("Turret/wantedAngle", wantedAngle)
+            val setpointAngle = (wantedAngle.unWrap(turretMotorFieldCentricAngle))
+            Logger.recordOutput("Turret/joystickSetpointAngle", setpointAngle)
+            turretFieldCentricSetpoint = setpointAngle
         }
     }
 
-    fun aimAtGoal(): Command = runCommand {
+    fun aimAtGoal(): Command = runCommand(this) {
 //        turretFieldCentricSetpoint = 0.0.degrees
 //
 //        val turretPos = if (Vision.rawLimelightPose != Pose2d()) Vision.rawLimelightPose.translation else Drive.pose.translation - Translation2d(
@@ -267,25 +274,29 @@ object Turret : SubsystemBase("Turret") {
 ////
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
         val camError = Vision.aimError2d
-        if (camError != null) {
+        var ty = 0.0
+        if (camError != null && !Vision.hasJitteryTag && Vision.seeTags) {
             val tagDistance = Vision.tagDistance
-            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + horizontalOffset.degrees //if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + /*horizontalOffset.degrees*/ if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
             Logger.recordOutput("Turret/aimError", aimError)
             turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
+            ty = Vision.filteredTy
         } else {
-//            val turretPos = Drive.pose.translation - Translation2d(
-//            TURRET_TO_ROBOT_IN.inches,
-//            0.0.inches
-//        ).rotateBy(Drive.heading.measure.asRotation2d)
-//
-//        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
+            val turretPos = Vision.poseEstimator.estimatedPosition.translation - Translation2d(
+            TURRET_TO_ROBOT_IN.inches,
+            0.0.inches
+            ).rotateBy(Drive.heading.measure.asRotation2d)
+
+            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees-turretPos.angleTo(FieldManager.goalPose)
+
+            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
         }
 
-//        if (Vision.filteredTy <= 50.0) {
-//            pivotSetpoint = shooterPitchCurve.get(Vision.filteredTy).degrees
-//            Shooter.leftRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
-//            Shooter.rightRpmSetpoint = shooterRPMCurve.get(Vision.filteredTy).coerceIn(19.0, 35.0)
-//        }
+        if (ty <= 50.0) {
+            pivotSetpoint = shooterPitchCurve.get(ty).degrees
+            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+        }
     }
 
     fun turretBrakeMode() {

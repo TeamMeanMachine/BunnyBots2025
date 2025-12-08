@@ -10,6 +10,7 @@ import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.control.MeanCommandXboxController
 import org.team2471.frc.lib.control.commands.finallyRun
 import org.team2471.frc.lib.control.commands.parallelCommand
+import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.control.commands.toCommand
 import org.team2471.frc.lib.control.dPad
 import org.team2471.frc.lib.control.rightBumper
@@ -85,6 +86,8 @@ object OI: SubsystemBase("OI") {
         // Default command, normal field-relative drive
         Drive.defaultCommand = Drive.joystickDrive()
 
+        Turret.defaultCommand = Turret.aimAtGoal()
+
 
 
         // Zero Gyro
@@ -100,21 +103,29 @@ object OI: SubsystemBase("OI") {
         }.toCommand(Drive).ignoringDisable(true))
 
         driverController.leftTrigger(0.5).whileTrue(
-//            parallelCommand(
-//                Drive.joystickOnlyTranslationDrive(),
-//                Turret.aimFieldCentricWithJoystick()
-//            )
-            Turret.aimAtGoal()
+            parallelCommand(
+                Drive.joystickOnlyTranslationDrive(),
+                Turret.aimFieldCentricWithJoystick()
+            )
+//            Turret.aimAtGoal()
         )
 
-        driverController.leftBumper().onTrue(runOnce {
+        driverController.rightBumper().onTrue(runOnce {
             if (Intake.intakeState != Intake.IntakeState.INTAKING) {
                 Intake.intakeState = Intake.IntakeState.INTAKING
             } else {
                 Intake.intakeState = Intake.IntakeState.HOLDING
             }
         })
-        driverController.a().whileTrue(spinnySpit())/* {
+        driverController.rightStick().onTrue(runOnce {
+            if (Intake.intakeState != Intake.IntakeState.BULLDOZING) {
+                Intake.intakeState = Intake.IntakeState.BULLDOZING
+            } else {
+                Intake.intakeState = Intake.IntakeState.HOLDING
+            }
+        })
+        driverController.leftBumper().whileTrue(spinnyPartialSpit())
+        /* {
 
             if (Intake.intakeState != Intake.IntakeState.REVERSING) {
                 Intake.intakeState = Intake.IntakeState.REVERSING
@@ -124,24 +135,25 @@ object OI: SubsystemBase("OI") {
         })*/
 
         driverController.rightTrigger(0.5).whileTrue(run {
-            if (Vision.seeTags) {
+//            if (Vision.seeTags) {
                 Intake.intakeState = Intake.IntakeState.SHOOTING
-            } else {
-                Intake.intakeState = Intake.IntakeState.INTAKING
-            }
+//            } else {
+//                Intake.intakeState = Intake.IntakeState.INTAKING
+//            }
 //            Shooter.shoot()
         }.finallyRun { Intake.intakeState = Intake.IntakeState.HOLDING })
-        driverController.rightBumper().onTrue(runOnce {
-            if (Shooter.ramping) {
-                Shooter.stop()
-            } else {
-                Shooter.shoot()
-            }
-        })
+//        driverController.rightBumper().onTrue(runOnce {
+//            if (Shooter.ramping) {
+//                Shooter.stop()
+//            } else {
+//                Shooter.shoot()
+//            }
+//        })
 
         driverController.y().onTrue(Intake.home())
         driverController.x().onTrue(runOnce { Intake.stow() })
         driverController.b().onTrue(runOnce { Intake.deploy() })
+        driverController.a().whileTrue(spinnySpit())
 //        driverController.y().onTrue(runOnce { Turret.pivotSetpoint = 40.0.degrees; println(Turret.pivotSetpoint) })
 //        driverController.b().onTrue(runOnce { Turret.pivotSetpoint = 25.0.degrees; println(Turret.pivotSetpoint) })
 //        driverController.a().onTrue(runOnce { Turret.pivotSetpoint = 5.0.degrees; println(Turret.pivotSetpoint) })
