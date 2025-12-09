@@ -23,7 +23,7 @@ import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
 
 object Vision : SubsystemBase() {
-    val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 2; imuAssistAlpha = 1.0 }
+    val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 1.0 }
     val inputs = VisionIO.VisionIOInputs()
 
     val poseEstimator = SwerveDrivePoseEstimator(Drive.kinematics, Drive.heading, Drive.modulePositions, Drive.pose, Drive.QUEST_STD_DEVS,
@@ -121,6 +121,12 @@ object Vision : SubsystemBase() {
             }
             numTagsHistory.add(trimmedFiducials.size)
 
+            if (filteredTy > -1.0) {
+                io.imuAssistAlpha = 1.0
+            } else {
+                io.imuAssistAlpha = 0.0000000000000000000001
+            }
+
         }
         else {
             numTagsHistory.add(0)
@@ -146,7 +152,12 @@ object Vision : SubsystemBase() {
         io.gyroReset()
     }
 
-    fun onEnable() = io.enable()
+    fun onEnable() {
+        io.enable()
+    }
 
-    fun onDisable() = io.disable()
+    fun onDisable() {
+        io.disable()
+    }
+
 }

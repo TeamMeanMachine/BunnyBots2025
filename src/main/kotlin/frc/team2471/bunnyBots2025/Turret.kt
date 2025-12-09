@@ -82,20 +82,26 @@ object Turret : SubsystemBase("Turret") {
     val shooterRPMCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
         put(2.5, 19.0)
         put(-0.1, 20.0)
-        put(-3.0, 26.0)
-        put(-4.8, 26.0)
-        put(-6.9, 30.0)
-        put(-9.25, 35.0)
+        put(-1.5, 22.0)
+        put(-3.0, 27.0)
+        put(-4.0, 29.0)
+        put(-5.0, 30.0)
+        put(-6.0, 33.0)
+        put(-7.0, 33.0)
+        put(-7.5, 55.0)
     }
 
-    // ty -> degreesz
+    // ty -> degrees
     val shooterPitchCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
         put(2.5, 50.0)
         put(-0.1, 50.0)
-        put(-3.0, 48.5)
-        put(-4.8, 34.9)
-        put(-6.9, 34.9)
-        put(-9.25, 32.7)
+        put(-1.5, 50.0)
+        put(-3.0, 50.0)
+        put(-4.0, 50.0)
+        put(-5.0, 50.0)
+        put(-6.0, 50.0)
+        put(-7.0, 50.0)
+        put(-7.5, 45.0)
     }
 
     val horizontalOffsetEntry = table.getEntry("Horizontal Offset")
@@ -103,12 +109,13 @@ object Turret : SubsystemBase("Turret") {
 
     // ty -> degrees
     val horizontalOffsetCurve = InterpolatingTreeMap<Double, Double>(InverseInterpolator.forDouble(), Interpolator.forDouble()).apply {
-        put(-0.1, 0.0)
         put(2.5, 0.0)
-        put(-3.0, 0.0)
-        put(-4.8, 0.0)
-        put(-6.9, -2.5)
-        put(-9.25, -2.5)
+        put(-0.1, 0.0)
+        put(-1.5, -1.0)
+        put(-3.0, -2.5)
+        put(-4.0, -3.0)
+        put(-5.0, -4.0)
+        put(-6.0, -4.0)
     }
 
     val joystickAimFilter = LinearFilter.singlePoleIIR(0.2, 0.02)
@@ -287,7 +294,7 @@ object Turret : SubsystemBase("Turret") {
             0.0.inches
             ).rotateBy(Drive.heading.measure.asRotation2d)
 
-            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees-turretPos.angleTo(FieldManager.goalPose)
+            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
 
             ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
         }
