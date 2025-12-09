@@ -42,6 +42,7 @@ object Autonomous {
         addOption("8 Foot Straight", AutoCommand(eightFootStraight()))
         addOption("6x6 Square", AutoCommand(squarePathTest()))
         addOption("Left to Center", AutoCommand(leftToCenter()))
+        addOption("Right to Center", AutoCommand(rightToCenter()))
         addOption("Cycle Center Left", AutoCommand(cycleCenterLeft()))
         addOption("Cycle Center Right", AutoCommand(cycleCenterRight()))
     }
@@ -184,6 +185,30 @@ object Autonomous {
             },
             parallelCommand(
                 Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true),
+                Turret.aimAtGoal(),
+                sequenceCommand(
+                    parallelCommand(
+                        Intake.home(),
+                        runOnce {
+                            Shooter.shoot()
+                        }
+                    ),
+                    runOnce {
+                        Intake.deploy()
+                        Intake.intakeState = Intake.IntakeState.SHOOTING
+                    }
+                )
+            )
+        )
+    }
+
+    private fun rightToCenter(): Command {
+        return sequenceCommand(
+            runOnce {
+                Drive.zeroGyro()
+            },
+            parallelCommand(
+                Drive.driveAlongChoreoPath(paths["Right to center"]!!, resetOdometry = true),
                 Turret.aimAtGoal(),
                 sequenceCommand(
                     parallelCommand(
