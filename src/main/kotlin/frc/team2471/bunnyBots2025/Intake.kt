@@ -86,7 +86,7 @@ object Intake: SubsystemBase("Intake") {
     const val BULLDOZING_POWER = -0.2
     const val HOMING_POWER = 0.1
 
-    val alternateFrames: Int = 20
+    val alternateFrames: Int = 10
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {

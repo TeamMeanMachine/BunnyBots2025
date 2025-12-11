@@ -114,8 +114,8 @@ object Turret : SubsystemBase("Turret") {
         put(-1.5, -1.0)
         put(-3.0, -2.5)
         put(-4.0, -3.0)
-        put(-5.0, -4.0)
-        put(-6.0, -4.0)
+        put(-5.0, -2.0)
+        put(-6.0, -1.0)
     }
 
     val joystickAimFilter = LinearFilter.singlePoleIIR(0.2, 0.02)

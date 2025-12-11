@@ -179,49 +179,27 @@ object Autonomous {
     }
 
     private fun leftToCenter(): Command {
-        return sequenceCommand(
-            runOnce {
-                Drive.zeroGyro()
-            },
-            parallelCommand(
-                Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true),
-                Turret.aimAtGoal(),
-                sequenceCommand(
-                    parallelCommand(
-                        Intake.home(),
-                        runOnce {
-                            Shooter.shoot()
-                        }
-                    ),
-                    runOnce {
-                        Intake.deploy()
-                        Intake.intakeState = Intake.IntakeState.SHOOTING
-                    }
-                )
+        return parallelCommand(
+            Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true),
+            sequenceCommand(
+                Intake.home(),
+                runOnce {
+                    Intake.deploy()
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }
             )
         )
     }
 
     private fun rightToCenter(): Command {
-        return sequenceCommand(
-            runOnce {
-                Drive.zeroGyro()
-            },
-            parallelCommand(
-                Drive.driveAlongChoreoPath(paths["Right to center"]!!, resetOdometry = true),
-                Turret.aimAtGoal(),
-                sequenceCommand(
-                    parallelCommand(
-                        Intake.home(),
-                        runOnce {
-                            Shooter.shoot()
-                        }
-                    ),
-                    runOnce {
-                        Intake.deploy()
-                        Intake.intakeState = Intake.IntakeState.SHOOTING
-                    }
-                )
+        return parallelCommand(
+            Drive.driveAlongChoreoPath(paths["Right to center"]!!, resetOdometry = true),
+            sequenceCommand(
+                Intake.home(),
+                runOnce {
+                    Intake.deploy()
+                    Intake.intakeState = Intake.IntakeState.SHOOTING
+                }
             )
         )
     }
@@ -248,7 +226,12 @@ object Autonomous {
                 runOnce {
                     Intake.intakeState = Intake.IntakeState.SHOOTING
                 }.finallyWait(2.5),
-                Drive.driveAlongChoreoPath(path.getSplit(2).get())
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(2).get()),
+                    runOnce {
+                        Intake.stow()
+                    }
+                )
             )
         )
     }
@@ -275,7 +258,12 @@ object Autonomous {
                 runOnce {
                     Intake.intakeState = Intake.IntakeState.SHOOTING
                 }.finallyWait(2.5),
-                Drive.driveAlongChoreoPath(path.getSplit(2).get())
+                parallelCommand(
+                    Drive.driveAlongChoreoPath(path.getSplit(2).get()),
+                    runOnce {
+                        Intake.stow()
+                    }
+                )
             )
         )
     }

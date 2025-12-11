@@ -154,6 +154,7 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
 
                     Logger.recordOutput("Drive/Quest/DataTimestamp", it.dataTimestamp)
                     Logger.recordOutput("Drive/Quest/CtreTimestamp", ctreTimestamp)
+                    println("ADDED QUEST MEASUREMENTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
                     addVisionMeasurement(pose, ctreTimestamp, QUEST_STD_DEVS)
                     questPose = pose
                 }

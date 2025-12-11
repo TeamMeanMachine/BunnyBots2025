@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Distance
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
+import org.team2471.frc.lib.control.LoopLogger
 import org.team2471.frc.lib.units.asInches
 import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.atan
@@ -75,7 +76,10 @@ object Vision : SubsystemBase() {
     var filteredTy: Double = 1000.0
 
     override fun periodic() {
+        LoopLogger.record("Start of Vision periodic")
         io.updateInputs(inputs)
+
+        LoopLogger.record("Updated Vision Inputs")
 
         seeTagsRaw = inputs.seesTag
 
@@ -92,6 +96,8 @@ object Vision : SubsystemBase() {
                 aimError2d = null
             }
 
+            LoopLogger.record("Calculated aimError2d")
+
             Logger.recordOutput("Vision/RobotPos", Pose2d(
                 rawLimelightPose.translation + Translation2d(
                     TURRET_TO_ROBOT_IN.inches,
@@ -99,6 +105,9 @@ object Vision : SubsystemBase() {
                 ).rotateBy((Drive.headingHistory.get(inputs.aprilTagTimestamp) ?: 0.0).degrees.asRotation2d),
                 Drive.heading
             ))
+
+            LoopLogger.record("Logged Calculated robotPos")
+
             poseEstimator.addVisionMeasurement(
                 Pose2d(
                     rawLimelightPose.translation + Translation2d(
@@ -109,6 +118,9 @@ object Vision : SubsystemBase() {
                 ),
                 inputs.aprilTagTimestamp, VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
             )
+
+            LoopLogger.record("Updated PoseEstimator")
+
             val trimmedFiducials = inputs.trimmedFiducials
             if (trimmedFiducials.isNotEmpty()) {
                 ty = trimmedFiducials[0].second.second
@@ -119,6 +131,9 @@ object Vision : SubsystemBase() {
                 ty = 1000.0
                 filteredTy = tyFilter.calculate(oldty)
             }
+
+            LoopLogger.record("Performed Calculations with trimmedFiducials")
+
             numTagsHistory.add(trimmedFiducials.size)
 
             if (filteredTy > -1.0) {
@@ -126,6 +141,8 @@ object Vision : SubsystemBase() {
             } else {
                 io.imuAssistAlpha = 0.0000000000000000000001
             }
+
+            LoopLogger.record("Updated imuassist")
 
         }
         else {
@@ -135,6 +152,8 @@ object Vision : SubsystemBase() {
         if (numTagsHistory.size > 25) {
             numTagsHistory.removeAt(0)
         }
+
+        LoopLogger.record("Updated num tag history")
 
         Logger.recordOutput("Vision/PoseEstimatorPose", poseEstimator.estimatedPosition)
 
