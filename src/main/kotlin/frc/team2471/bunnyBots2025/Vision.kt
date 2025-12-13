@@ -22,6 +22,7 @@ import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.units.tan
 import org.team2471.frc.lib.vision.limelight.VisionIO
 import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
+import kotlin.math.sqrt
 
 object Vision : SubsystemBase() {
     val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 1.0 }
@@ -82,6 +83,7 @@ object Vision : SubsystemBase() {
         LoopLogger.record("Updated Vision Inputs")
 
         seeTagsRaw = inputs.seesTag
+        val trimmedFiducials = inputs.trimmedFiducials
 
         if (inputs.aprilTagPoseEstimate != Pose2d()) {
             rawLimelightPose = inputs.aprilTagPoseEstimate
@@ -127,6 +129,7 @@ object Vision : SubsystemBase() {
                 oldty = ty
                 filteredTy = tyFilter.calculate(ty)
                 tagDistance = 20.0.inches / tan((15.0 + trimmedFiducials[0].second.second).degrees)
+
             } else {
                 ty = 1000.0
                 filteredTy = tyFilter.calculate(oldty)
@@ -149,6 +152,8 @@ object Vision : SubsystemBase() {
             numTagsHistory.add(0)
         }
 
+        updateCrop(trimmedFiducials)
+
         if (numTagsHistory.size > 25) {
             numTagsHistory.removeAt(0)
         }
@@ -160,6 +165,50 @@ object Vision : SubsystemBase() {
 //        if (Robot.isDisabled) {
 //            io.disabledGyroReset()
 //        }
+
+    }
+
+    fun updateCrop(fiducials: List<Triple<Double, Pair<Double, Double>, Double>>) {
+
+        if (fiducials.isEmpty()) {
+//            println("No fiducials found")
+            io.updateCropping(-1.0, 1.0, -0.7, 0.5)
+            return
+        }
+
+        val overshootPercentage = 1.75
+
+        var minY = 1.0
+        var maxY = -1.0
+
+
+        for (i in fiducials.indices) {
+
+            val fiducial = fiducials[i]
+
+            val normalizedTy = fiducial.second.second / 28.1
+
+            // half a side length               area of image (when x and y are between -1 and 1)
+            val targetRadius = sqrt(fiducial.third) / 2.0 * 4.0
+
+            Logger.recordOutput("targetRadius", targetRadius )
+
+
+            val maybeMinY = (normalizedTy - targetRadius * overshootPercentage).coerceIn(-1.0, 1.0)
+            val maybeMaxY = (normalizedTy + targetRadius * overshootPercentage).coerceIn(-1.0, 1.0)
+
+            if (maybeMaxY > maxY) maxY = maybeMaxY
+            if (maybeMinY < minY) minY = maybeMinY
+
+
+        }
+
+        if (minY < -0.7) minY = -0.7
+        if (maxY > 0.5) maxY = 0.5
+
+        Logger.recordOutput("Crop", Translation2d(-1.0, minY), Translation2d(1.0, minY), Translation2d(-1.0, maxY), Translation2d(1.0, maxY))
+
+        io.updateCropping(-1.0, 1.0, minY, maxY)
 
     }
 
