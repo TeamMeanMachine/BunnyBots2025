@@ -24,7 +24,7 @@ fun turretPercentOutputTest(): Command = runCommand {
 }
 fun zeroPivot(): Command = runOnceCommand {
     println("Zeroing Pivot angle: ${Turret.pivotEncoderAngle.asDegrees}")
-    Turret.pivotEncoderOffset = 18.0 - Turret.pivotEncoder.position.valueAsDouble.rotations.asDegrees
+    Turret.pivotEncoderOffset = 18.0 - Turret.pivotEncoder.absolutePosition.valueAsDouble.rotations.asDegrees
     println("Zeroing Pivot angle: ${Turret.pivotEncoderAngle.asDegrees}")
     Turret.pivotMotor.setPosition(Turret.pivotEncoderAngle)
 
