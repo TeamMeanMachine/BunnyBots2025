@@ -35,6 +35,7 @@ import kotlin.compareTo
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.math.sign
 import kotlin.math.sin
 
 
@@ -117,6 +118,8 @@ object Turret : SubsystemBase("Turret") {
         put(-5.0, -2.0)
         put(-6.0, -1.0)
     }
+
+    val AUTO_HORIZONTAL_OFFSET = 4.0
 
     val joystickAimFilter = LinearFilter.singlePoleIIR(0.2, 0.02)
 
@@ -285,7 +288,12 @@ object Turret : SubsystemBase("Turret") {
         var ty = 0.0
         if (camError != null && !Vision.hasJitteryTag && Vision.seeTags) {
             val tagDistance = Vision.tagDistance
-            val aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + /*horizontalOffset.degrees*/ if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+            var aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + /*horizontalOffset.degrees*/ if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+
+            if (Robot.isAutonomousEnabled) {
+                aimError += AUTO_HORIZONTAL_OFFSET.degrees * sign(Drive.velocity.y.asMetersPerSecond)
+            }
+
             Logger.recordOutput("Turret/aimError", aimError)
             turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
             ty = Vision.filteredTy

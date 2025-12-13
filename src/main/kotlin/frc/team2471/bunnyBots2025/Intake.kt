@@ -29,7 +29,6 @@ import org.team2471.frc.lib.ctre.p
 import org.team2471.frc.lib.ctre.s
 import org.team2471.frc.lib.ctre.v
 import org.team2471.frc.lib.units.degreesPerSecond
-import org.team2471.frc.lib.units.rotations
 import org.team2471.frc.lib.units.rotationsPerSecond
 
 object Intake: SubsystemBase("Intake") {
@@ -68,8 +67,8 @@ object Intake: SubsystemBase("Intake") {
     @get:AutoLogOutput(key = "Intake/Hit Hard Stop")
     val hitHardStop get() = !intakeStopSensor.get()
 
-    val DEPLOY_POSE get() = deployPoseEntry.getDouble(19.4)
-    val STOW_POSE get() = stowPoseEntry.getDouble(0.0)
+    val deploy_pose get() = deployPoseEntry.getDouble(18.0)
+    val stow_pose get() = stowPoseEntry.getDouble(0.0)
 
     const val CAN_RANGE_DISTANCE_THRESHOLD = 0.07 // meters
 
@@ -90,12 +89,12 @@ object Intake: SubsystemBase("Intake") {
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {
-            field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
+            field = if (deployMotorPosition > deploy_pose - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             frontMotor.setControl(DutyCycleOut(field))
         }
     var topCenteringPowerSetpoint: Double = 0.0
         set(value) {
-            field = if (deployMotorPosition > DEPLOY_POSE - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
+            field = if (deployMotorPosition > deploy_pose - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
             centeringMotorTop.setControl(DutyCycleOut(field))
         }
 
@@ -124,8 +123,8 @@ object Intake: SubsystemBase("Intake") {
         cycloneFeedPowerEntry.setDouble(CYCLONE_POWER)
         shooterFeedPowerEntry.setDouble(SHOOTER_FEEDER_POWER)
 
-        deployPoseEntry.setDouble(DEPLOY_POSE)
-        stowPoseEntry.setDouble(STOW_POSE)
+        deployPoseEntry.setDouble(deploy_pose)
+        stowPoseEntry.setDouble(stow_pose)
 
         frontIntakePowerEntry.setPersistent()
         topCenteringPowerEntry.setPersistent()
@@ -179,12 +178,12 @@ object Intake: SubsystemBase("Intake") {
     }
 
     fun deploy() {
-        deployMotor.setControl(MotionMagicDutyCycle(DEPLOY_POSE))
+        deployMotor.setControl(MotionMagicDutyCycle(deploy_pose))
 //        currentState = State.INTAKING
     }
 
     fun stow() {
-        deployMotor.setControl(MotionMagicDutyCycle(STOW_POSE))
+        deployMotor.setControl(MotionMagicDutyCycle(stow_pose))
 //        currentState = State.HOLDING
     }
 
@@ -233,8 +232,8 @@ object Intake: SubsystemBase("Intake") {
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
                 topCenteringPowerSetpoint = -TOP_CENTERING_POWER
-//                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
-                cycloneVelocitySetpoint = -CYCLONE_SPEED
+                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
+//                cycloneVelocitySetpoint = -CYCLONE_SPEED
                 shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
             }
 
@@ -243,8 +242,8 @@ object Intake: SubsystemBase("Intake") {
                 centeringMotorLeft.setControl(DutyCycleOut(-LEFT_CENTERING_POWER))
                 centeringMotorRight.setControl(DutyCycleOut(-RIGHT_CENTERING_POWER))
                 topCenteringPowerSetpoint = -TOP_CENTERING_POWER
-//                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
-                cycloneVelocitySetpoint = -CYCLONE_SPEED
+                cycloneMotor.setControl(DutyCycleOut(-CYCLONE_POWER))
+//                cycloneVelocitySetpoint = -CYCLONE_SPEED
                 shooterFeederMotor.setControl(DutyCycleOut(-SHOOTER_FEEDER_POWER))
             }
 
@@ -254,8 +253,8 @@ object Intake: SubsystemBase("Intake") {
 //                centeringMotorRight.setControl(DutyCycleOut(RIGHT_CENTERING_POWER))
                 alternateCenteringLogic()
                 topCenteringPowerSetpoint = TOP_CENTERING_POWER
-//                cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
-                cycloneVelocitySetpoint = CYCLONE_SPEED
+                cycloneMotor.setControl(DutyCycleOut(CYCLONE_POWER))
+//                cycloneVelocitySetpoint = CYCLONE_SPEED
                 shooterFeederMotor.setControl(DutyCycleOut(SHOOTER_FEEDER_POWER))
             }
 

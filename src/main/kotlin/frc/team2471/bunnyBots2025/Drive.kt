@@ -52,6 +52,7 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
             tempQuestPose = value.transformBy(robotToQuestTransformMeters)
             resetQuestTranslation = true
             resetPose(value)
+            Vision.poseEstimator.resetPose(value)
         }
 
     override var heading: Rotation2d
