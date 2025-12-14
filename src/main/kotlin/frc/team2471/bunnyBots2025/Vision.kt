@@ -28,6 +28,8 @@ object Vision : SubsystemBase() {
     val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 1.0 }
     val inputs = VisionIO.VisionIOInputs()
 
+    var pose: Pose2d = Pose2d()
+
     val poseEstimator = SwerveDrivePoseEstimator(Drive.kinematics, Drive.heading, Drive.modulePositions, Drive.pose, Drive.QUEST_STD_DEVS,
         VecBuilder.fill(0.01, 0.01, Double.MAX_VALUE))
 
@@ -35,6 +37,7 @@ object Vision : SubsystemBase() {
 
     var rawLimelightPose = Pose2d()
 
+    var hasSeenTag = false
 
     @get:AutoLogOutput(key = "Vision/AimError2d")
     var aimError2d: Angle? = null
@@ -86,6 +89,7 @@ object Vision : SubsystemBase() {
         val trimmedFiducials = inputs.trimmedFiducials
 
         if (inputs.aprilTagPoseEstimate != Pose2d()) {
+            hasSeenTag = true
             rawLimelightPose = inputs.aprilTagPoseEstimate
 
             if (inputs.trimmedFiducials.size == 2) {
@@ -110,16 +114,30 @@ object Vision : SubsystemBase() {
 
             LoopLogger.record("Logged Calculated robotPos")
 
-            poseEstimator.addVisionMeasurement(
-                Pose2d(
-                    rawLimelightPose.translation + Translation2d(
+            try {
+
+                val turretToRobotFieldCentric = if (Drive.headingHistory.get(inputs.aprilTagTimestamp) != null) {
+                    Translation2d(
                         TURRET_TO_ROBOT_IN.inches,
                         0.0.inches
-                    ).rotateBy((Drive.headingHistory.get(inputs.aprilTagTimestamp) ?: 0.0).degrees.asRotation2d),
-                    Drive.heading
-                ),
-                inputs.aprilTagTimestamp, VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
-            )
+                    ).rotateBy((Drive.headingHistory.get(inputs.aprilTagTimestamp) ?: 0.0).degrees.asRotation2d)
+                } else {
+                    Translation2d(
+                        0.0.inches,
+                        0.0.inches
+                    )
+                }
+
+                poseEstimator.addVisionMeasurement(
+                    Pose2d(
+                        rawLimelightPose.translation + turretToRobotFieldCentric,
+                        Drive.heading
+                    ),
+                    inputs.aprilTagTimestamp, VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
+                )
+            } catch (ex: Exception) {
+                println("Vision update died $ex")
+            }
 
             LoopLogger.record("Updated PoseEstimator")
 
@@ -160,7 +178,7 @@ object Vision : SubsystemBase() {
 
         LoopLogger.record("Updated num tag history")
 
-        Logger.recordOutput("Vision/PoseEstimatorPose", poseEstimator.estimatedPosition)
+        Logger.recordOutput("Vision/PoseEstimatorPose", pose)
 
 //        if (Robot.isDisabled) {
 //            io.disabledGyroReset()

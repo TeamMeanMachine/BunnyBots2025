@@ -261,6 +261,7 @@ object Turret : SubsystemBase("Turret") {
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
         }
+
     }
 
 
@@ -286,34 +287,43 @@ object Turret : SubsystemBase("Turret") {
 //        turretFieldCentricSetpoint = -turretPos.angleTo(FieldManager.goalPose)
         val camError = Vision.aimError2d
         var ty = 0.0
-        if (camError != null && !Vision.hasJitteryTag && Vision.seeTags) {
+        if (camError != null /*&& !Vision.hasJitteryTag*/ && Vision.seeTags) {
             val tagDistance = Vision.tagDistance
-            var aimError = atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + /*horizontalOffset.degrees*/ if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees
+            var aimError =
+                atan((tagDistance.asInches * tan(camError)) / (tagDistance.asInches - 6.0)) + /*horizontalOffset.degrees*/ if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(
+                    Vision.filteredTy
+                ).degrees else 0.0.degrees
 
             if (Robot.isAutonomousEnabled) {
                 aimError += AUTO_HORIZONTAL_OFFSET.degrees * sign(Drive.velocity.y.asMetersPerSecond)
             }
 
             Logger.recordOutput("Turret/aimError", aimError)
-            turretSetpoint = (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
+            turretSetpoint =
+                (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
             ty = Vision.filteredTy
-        } else {
-            val turretPos = Vision.poseEstimator.estimatedPosition.translation - Translation2d(
-            TURRET_TO_ROBOT_IN.inches,
-            0.0.inches
-            ).rotateBy(Drive.heading.measure.asRotation2d)
-
-            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
-
-            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
-        }
-
-        if (ty <= 50.0) {
             pivotSetpoint = shooterPitchCurve.get(ty).degrees
             Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
             Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
         }
+//        } else if (Vision.hasSeenTag && Vision.pose.translation != Translation2d()) {
+//            val turretPos = Vision.pose.translation - Translation2d(
+//            TURRET_TO_ROBOT_IN.inches,
+//            0.0.inches
+//            ).rotateBy(Drive.heading.measure.asRotation2d)
+//
+//            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
+//
+//            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
+//        }
+
+        if (ty <= 50.0 && Vision.hasSeenTag) {
+//            pivotSetpoint = shooterPitchCurve.get(ty).degrees
+//            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+//            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+        }
     }
+
 
     fun turretBrakeMode() {
         turretMotor.brakeMode()

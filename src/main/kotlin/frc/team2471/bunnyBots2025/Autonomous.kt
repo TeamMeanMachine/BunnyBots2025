@@ -180,7 +180,7 @@ object Autonomous {
 
     private fun leftToCenter(): Command {
         return parallelCommand(
-            Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true),
+            Drive.driveAlongChoreoPath({ paths["Left to center"]!! }, resetOdometry = true),
             sequenceCommand(
                 Intake.home(),
                 runOnce {
@@ -193,7 +193,7 @@ object Autonomous {
 
     private fun rightToCenter(): Command {
         return parallelCommand(
-            Drive.driveAlongChoreoPath(paths["Right to center"]!!, resetOdometry = true),
+            Drive.driveAlongChoreoPath({ paths["Right to center"]!! }, resetOdometry = true),
             sequenceCommand(
                 Intake.home(),
                 runOnce {
@@ -210,7 +210,7 @@ object Autonomous {
             Turret.aimAtGoal(),
             sequenceCommand(
                 parallelCommand(
-                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
+                    Drive.driveAlongChoreoPath({path.getSplit(0).get()}, resetOdometry = true),
                     Intake.home()
                 ),
                 runOnce {
@@ -242,7 +242,7 @@ object Autonomous {
             Turret.aimAtGoal(),
             sequenceCommand(
                 parallelCommand(
-                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
+                    Drive.driveAlongChoreoPath({path.getSplit(0).get()}, resetOdometry = true),
                     Intake.home()
                 ),
                 runOnce {

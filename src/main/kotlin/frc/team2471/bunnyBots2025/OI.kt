@@ -110,6 +110,13 @@ object OI: SubsystemBase("OI") {
 //            Turret.aimAtGoal()
         )
 
+        operatorController.leftTrigger(0.5).whileTrue(
+//                Drive.joystickOnlyTranslationDrive(),
+                Turret.aimFieldCentricWithJoystick()
+//            Turret.aimAtGoal()
+        )
+
+
         driverController.rightBumper().onTrue(runOnce {
             if (Intake.intakeState != Intake.IntakeState.INTAKING) {
                 Intake.intakeState = Intake.IntakeState.INTAKING
