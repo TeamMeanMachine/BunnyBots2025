@@ -302,25 +302,24 @@ object Turret : SubsystemBase("Turret") {
             turretSetpoint =
                 (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
             ty = Vision.filteredTy
-            pivotSetpoint = shooterPitchCurve.get(ty).degrees
-            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
-            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
-        }
-//        } else if (Vision.hasSeenTag && Vision.pose.translation != Translation2d()) {
-//            val turretPos = Vision.pose.translation - Translation2d(
-//            TURRET_TO_ROBOT_IN.inches,
-//            0.0.inches
-//            ).rotateBy(Drive.heading.measure.asRotation2d)
-//
-//            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
-//
-//            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
-//        }
-
-        if (ty <= 50.0 && Vision.hasSeenTag) {
 //            pivotSetpoint = shooterPitchCurve.get(ty).degrees
 //            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
 //            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+        } else if (Vision.hasSeenTag && Vision.pose.translation != Translation2d()) {
+            val turretPos = Vision.pose.translation - Translation2d(
+            TURRET_TO_ROBOT_IN.inches,
+            0.0.inches
+            ).rotateBy(Drive.heading.measure.asRotation2d)
+
+            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
+
+            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
+        }
+
+        if (ty <= 50.0 && Vision.hasSeenTag) {
+            pivotSetpoint = shooterPitchCurve.get(ty).degrees
+            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
         }
     }
 
