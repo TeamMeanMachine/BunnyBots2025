@@ -24,17 +24,15 @@ import org.team2471.frc.lib.control.commands.toCommand
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser
 import org.team2471.frc.lib.control.commands.finallyWait
 import org.team2471.frc.lib.control.commands.parallelCommand
-import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.control.commands.runOnce
-import org.team2471.frc.lib.control.commands.runOnceCommand
 import org.team2471.frc.lib.control.commands.sequenceCommand
-import org.team2471.frc.lib.util.isRedAlliance
 import kotlin.collections.forEach
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
 import kotlin.jvm.optionals.getOrNull
 
 object Autonomous {
+    /** Choreo paths */
     val paths: MutableMap<String, Trajectory<SwerveSample>> = findChoreoPaths()
 
     // Chooser for selecting autonomous commands
@@ -68,16 +66,6 @@ object Autonomous {
     val autonomousCommand: Command? get() = if (!Drive.demoMode) selectedAuto?.command else ({ println("DEMO MODE: Not running auto, no killing kids today.") }).toCommand()
     val testCommand: Command? get() = testChooser.get()
 
-    /**
-     * Initial value determines which side all choreo paths are made for.
-     * False = all choreo paths are made on the blue side.
-     * True = all choreo paths are made on the red side.
-     */
-    var isPathsRed = false
-        private set
-
-    private var prevPathRed: Boolean? = null
-
     init {
         readAutoPaths()
     }
@@ -89,6 +77,7 @@ object Autonomous {
             selectedAuto = autoChooser.get()
             println("selected auto changed ${autoChooser.sendableChooser.selected}")
             setDrivePositionToAutoStartPose()
+            readAutoPaths()
             println("finished reading auto in ${(RobotController.getMeasureFPGATime() - startTime).asSeconds} seconds")
         }
     }
@@ -101,19 +90,7 @@ object Autonomous {
         }
     }
 
-    /**
-     * Checks if the alliance color has changed and flips the paths if so
-     */
-    fun flipPathsIfAllianceChange() {
-        if (prevPathRed != null) {
-            if (prevPathRed != isRedAlliance) {
-                flipPaths()
-            }
-        } else if (isRedAlliance != isPathsRed) { // Code always goes here for the first time because prevPathRed starts null
-            flipPaths()
-        }
-    }
-
+    // Warm up the paths in the JVM by reading them (May speed up code time)
     fun readAutoPaths() {
         val startTime = RobotController.getMeasureFPGATime()
         val pathNameAndStartPose = mutableListOf<Pair<String, Pose2d>>()
@@ -121,28 +98,15 @@ object Autonomous {
         paths.forEach {
             pathNameAndStartPose.add(Pair(
                 it.value.name(),
-                it.value.sampleAt(0.0, false).get().pose
+                it.value.sampleAt(0.0, Drive.flipChoreoPaths).get().pose
             ))
             val pathSegment = it.value.totalTime / 10.0
             for (i in 0..10) {
-                segments.add(it.value.sampleAt(i * pathSegment, false).getOrNull()?.chassisSpeeds)
+                segments.add(it.value.sampleAt(i * pathSegment, Drive.flipChoreoPaths).getOrNull()?.chassisSpeeds)
             }
         }
         println("paths: $pathNameAndStartPose")
         println("reading ${paths.size} paths and ${segments.size} samples. Took ${(RobotController.getMeasureFPGATime() - startTime).asSeconds.round(4)} seconds.")
-    }
-
-    /**
-     * Flip the path so it is correct for the alliance color
-     */
-    private fun flipPaths() {
-        println("flipping paths")
-        paths.replaceAll { _, t -> t.flipped() }
-        isPathsRed = !isPathsRed
-        prevPathRed = isPathsRed
-        setDrivePositionToAutoStartPose()
-        println(paths.map { it.value.sampleAt(0.0, false)?.get()?.pose})
-        readAutoPaths()
     }
 
     /**
@@ -180,7 +144,7 @@ object Autonomous {
 
     private fun leftToCenter(): Command {
         return parallelCommand(
-            Drive.driveAlongChoreoPath({ paths["Left to center"]!! }, resetOdometry = true),
+            Drive.driveAlongChoreoPath(paths["Left to center"]!!, resetOdometry = true),
             sequenceCommand(
                 Intake.home(),
                 runOnce {
@@ -193,7 +157,7 @@ object Autonomous {
 
     private fun rightToCenter(): Command {
         return parallelCommand(
-            Drive.driveAlongChoreoPath({ paths["Right to center"]!! }, resetOdometry = true),
+            Drive.driveAlongChoreoPath(paths["Right to center"]!!, resetOdometry = true),
             sequenceCommand(
                 Intake.home(),
                 runOnce {
@@ -210,7 +174,7 @@ object Autonomous {
             Turret.aimAtGoal(),
             sequenceCommand(
                 parallelCommand(
-                    Drive.driveAlongChoreoPath({path.getSplit(0).get()}, resetOdometry = true),
+                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
                     Intake.home()
                 ),
                 runOnce {
@@ -242,7 +206,7 @@ object Autonomous {
             Turret.aimAtGoal(),
             sequenceCommand(
                 parallelCommand(
-                    Drive.driveAlongChoreoPath({path.getSplit(0).get()}, resetOdometry = true),
+                    Drive.driveAlongChoreoPath(path.getSplit(0).get(), resetOdometry = true),
                     Intake.home()
                 ),
                 runOnce {
