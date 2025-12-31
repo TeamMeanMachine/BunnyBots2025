@@ -7,11 +7,8 @@ import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
-import com.ctre.phoenix6.signals.NeutralModeValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.filter.LinearFilter
-import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.interpolation.InterpolatingTreeMap
 import edu.wpi.first.math.interpolation.Interpolator
@@ -28,10 +25,8 @@ import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.ctre.*
 import org.team2471.frc.lib.ctre.loggedTalonFX.LoggedTalonFX
 import org.team2471.frc.lib.units.*
-import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.math.DynamicInterpolatingTreeMap
 import org.team2471.frc.lib.util.angleTo
-import java.lang.reflect.Field
-import kotlin.compareTo
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
