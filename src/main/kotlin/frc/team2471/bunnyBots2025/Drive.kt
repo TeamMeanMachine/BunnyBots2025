@@ -15,7 +15,6 @@ import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.interpolation.InterpolatingTreeMap
 import edu.wpi.first.math.interpolation.Interpolator
 import edu.wpi.first.math.interpolation.InverseInterpolator
 import edu.wpi.first.math.kinematics.ChassisSpeeds
@@ -24,10 +23,7 @@ import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.wpilibj.Timer
 import gg.questnav.questnav.QuestNav
 import org.littletonrobotics.junction.Logger
-import org.opencv.core.Mat
 import org.team2471.frc.lib.control.LoopLogger
-import org.team2471.frc.lib.ctre.PhoenixUtil
-import org.team2471.frc.lib.localization.PoseLocalizer
 import org.team2471.frc.lib.math.cube
 import org.team2471.frc.lib.math.square
 import org.team2471.frc.lib.swerve.SwerveDriveSubsystem
@@ -36,11 +32,10 @@ import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.util.demoSpeed
 import org.team2471.frc.lib.util.isBlueAlliance
 import org.team2471.frc.lib.util.isReal
 import org.team2471.frc.lib.util.isRedAlliance
-import org.team2471.frc.lib.vision.Fiducial
-import org.team2471.frc.lib.vision.QuixVisionCamera
 
 
 object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerConstants.moduleConfigs) {
