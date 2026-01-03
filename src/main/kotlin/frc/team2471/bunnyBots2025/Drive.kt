@@ -32,6 +32,9 @@ import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.math.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.units.inchesPerSecond
+import org.team2471.frc.lib.units.metersPerSecondPerSecond
+import org.team2471.frc.lib.units.perSecond
 import org.team2471.frc.lib.util.demoSpeed
 import org.team2471.frc.lib.util.isBlueAlliance
 import org.team2471.frc.lib.util.isReal
@@ -87,9 +90,9 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
     private var prevTranslation = Translation2d()
 
     // Drive Feedback controllers
-    override val autoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 2.0, 0.5.inches, 1.0.degrees)
-    val fastAutoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 5.0, 0.5.inches, 1.0.degrees)
-    val slowAutoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 0.5, 0.25.inches, 1.0.degrees)
+    override val autoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 2.0.metersPerSecondPerSecond.perSecond, 0.5.inches, 1.0.degrees)
+    val fastAutoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 5.0.metersPerSecondPerSecond.perSecond, 0.5.inches, 1.0.degrees)
+    val slowAutoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 0.5.metersPerSecondPerSecond.perSecond, 0.25.inches, 1.0.degrees)
 
     override val pathXController = PIDController(7.0, 0.0, 0.0)
     override val pathYController = PIDController(7.0, 0.0, 0.0)
@@ -101,6 +104,8 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
     override val driveAtAnglePIDController = PhoenixPIDController(7.7, 0.0, 0.072)
 
     override val isDisabledSupplier: () -> Boolean = { Robot.isDisabled }
+
+    override val choreoPathsStartOnRed: Boolean = false // false=made on the blue side, true=made on the red side
 
     init {
         println("inside Drive init")

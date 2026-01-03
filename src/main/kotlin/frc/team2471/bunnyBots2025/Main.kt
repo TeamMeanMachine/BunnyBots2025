@@ -54,7 +54,7 @@ object Robot : LoggedRobot() {
     var isAutonomous = false
         private set
     @get:JvmName("RobotIsDisabled")
-    var isDisabled = false
+    var isDisabled = true
         private set
     @get:JvmName("RobotIsAutonomousEnabled")
     var isAutonomousEnabled = false
@@ -112,6 +112,7 @@ object Robot : LoggedRobot() {
         println("We see ${Autonomous.paths.size} paths and they are made on the ${if (Drive.choreoPathsStartOnRed) "red" else "blue"} side.")
 
         GlobalScope.launch {
+            // Attempt to clear out small occasional loop overruns when periodically calling DriverStation.isEnabled()
             while (true) {
                 isEnabled = DriverStation.isEnabled()
                 isDisabled = !isEnabled
