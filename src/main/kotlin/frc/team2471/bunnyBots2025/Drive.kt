@@ -12,6 +12,7 @@ import edu.wpi.first.math.Matrix
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
@@ -59,10 +60,10 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
 //            println("resting heading to ${value.degrees}")
             resetRotation(value)
             if (resetQuestTranslation) {
-                quest.setPose(Pose2d(tempQuestPose.translation, value + robotToQuestTransformMeters.rotation))
+                quest.setPose(Pose3d(Pose2d(tempQuestPose.translation, value + robotToQuestTransformMeters.rotation)))
                 resetQuestTranslation = false
             } else {
-                quest.setPose(Pose2d(questPose.transformBy(robotToQuestTransformMeters).translation, value + robotToQuestTransformMeters.rotation))
+                quest.setPose(Pose3d(Pose2d(questPose.transformBy(robotToQuestTransformMeters).translation, value + robotToQuestTransformMeters.rotation)))
             }
         }
 
@@ -150,7 +151,7 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
         if (questConnected) {
             if (isReal) {
                 quest.allUnreadPoseFrames.forEach {
-                    val pose = it.questPose.transformBy(robotToQuestTransformMeters.inverse())
+                    val pose = it.questPose3d.toPose2d().transformBy(robotToQuestTransformMeters.inverse())
                     val ctreTimestamp = Utils.fpgaToCurrentTime(it.dataTimestamp)
 
                     Logger.recordOutput("Drive/Quest/DataTimestamp", it.dataTimestamp)
