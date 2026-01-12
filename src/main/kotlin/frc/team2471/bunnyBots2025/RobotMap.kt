@@ -2,6 +2,7 @@
 
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.CANBus
 import org.team2471.frc.lib.util.isSim
 
 object Sparks {
@@ -65,11 +66,12 @@ object ServoPort {
 }
 
 object CANivores {
-    const val TURRET_CAN = "Kenivore"
+    val TURRET_CAN = CANBus("Kenivore")
 }
 
 object CANSensors {
     const val PIGEON = 2
+    const val TURRET_PIGEON = 40
 
     const val CANDI = 30
 

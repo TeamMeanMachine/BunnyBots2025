@@ -50,7 +50,7 @@ object Turret : SubsystemBase("Turret") {
     private val pivotEncoderOffsetEntry = table.getEntry("Pivot Encoder Offset")
 
 
-    val turretMotor = LoggedTalonFX(Falcons.TURRET_0)
+    val turretMotor = LoggedTalonFX(Falcons.TURRET_0, CANivores.TURRET_CAN)
     val pivotMotor = TalonFX(Falcons.PIVOT, CANivores.TURRET_CAN)
     val candi = CANdi(CANSensors.CANDI, CANivores.TURRET_CAN)
     val pivotEncoder = CANcoder(CANCoders.PIVOT, CANivores.TURRET_CAN)
