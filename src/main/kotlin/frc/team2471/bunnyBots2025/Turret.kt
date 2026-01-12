@@ -5,8 +5,10 @@ import com.ctre.phoenix6.controls.PositionDutyCycle
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
+import com.ctre.phoenix6.hardware.Pigeon2
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.geometry.Translation2d
@@ -54,6 +56,7 @@ object Turret : SubsystemBase("Turret") {
     val pivotMotor = TalonFX(Falcons.PIVOT, CANivores.TURRET_CAN)
     val candi = CANdi(CANSensors.CANDI, CANivores.TURRET_CAN)
     val pivotEncoder = CANcoder(CANCoders.PIVOT, CANivores.TURRET_CAN)
+    val turretPigeon = Pigeon2(CANSensors.TURRET_PIGEON, CANivores.TURRET_CAN)
 
 
     @get:AutoLogOutput(key = "Turret/rawLampreyAngle")
@@ -224,6 +227,7 @@ object Turret : SubsystemBase("Turret") {
 
             Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
             motionMagic(2.1, 12.2)
+//            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, 1.0 / (10.0 / 233.0))
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
@@ -243,6 +247,7 @@ object Turret : SubsystemBase("Turret") {
         }
 
         turretMotor.setPosition(turretEncoderAngle)
+        turretPigeon.setYaw(turretEncoderFieldCentricAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
     }
 
