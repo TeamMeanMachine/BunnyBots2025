@@ -140,14 +140,14 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretMotorAngle")
     val turretMotorAngle: Angle
-        get() = turretMotor.position.valueAsDouble.rotations
+        get() = -turretMotorFieldCentricAngle - Drive.heading.measure//turretMotor.position.valueAsDouble.rotations
 
     val turretMotorAngleHistory = DynamicInterpolatingTreeMap(
         InverseInterpolator.forDouble(), Interpolator.forDouble(), 75)
 
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
-        get() = turretMotorAngle + Drive.heading.measure
+        get() = turretMotor.position.valueAsDouble.rotations//turretMotorAngle + Drive.heading.measure
 
     @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
@@ -155,24 +155,26 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretFeedforward")
     val turretFeedforward: Double
-        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 10.0
+        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 0.0
 
     @get:AutoLogOutput(key = "Turret/turretSetpoint")
-    var turretSetpoint: Angle = turretMotorAngle
+    var turretSetpoint: Angle// = turretMotorAngle
+        get() = -turretFieldCentricSetpoint - Drive.heading.measure
         set(value) {
-            field = value.unWrap(turretMotorAngle)
+            turretFieldCentricSetpoint = Drive.heading.measure + value
+        }
+
+    @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
+    var turretFieldCentricSetpoint: Angle = turretMotorAngle
+//        get() = turretSetpoint + Drive.heading.measure
+        set(value) {
+            field = value.wrap()//.unWrap(turretMotorAngle)
             if ((turretMotorAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
                 turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
             }
-        }
 
-    @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
-    var turretFieldCentricSetpoint: Angle
-        get() = turretSetpoint + Drive.heading.measure
-        set(value) {
-            turretSetpoint = -Drive.heading.measure - value
         }
 
     @get:AutoLogOutput(key = "Turret/turretSetpointError")
@@ -225,9 +227,11 @@ object Turret : SubsystemBase("Turret") {
 
 
 
-            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
+//            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
             motionMagic(2.1, 12.2)
-//            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, 1.0 / (10.0 / 233.0))
+            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, (10.0 / 233.0))
+
+            ClosedLoopGeneral.ContinuousWrap = true
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
@@ -247,7 +251,6 @@ object Turret : SubsystemBase("Turret") {
         }
 
         turretMotor.setPosition(turretEncoderAngle)
-        turretPigeon.setYaw(turretEncoderFieldCentricAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
     }
 
@@ -256,10 +259,15 @@ object Turret : SubsystemBase("Turret") {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage || turretMotor.controlMode.value == ControlModeValue.PositionVoltage) {
 //            println("running ff")
-            turretSetpoint = turretSetpoint
+//            turretSetpoint = turretSetpoint
+//            turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
+        }
+
+        if (Robot.isDisabled) {
+//            turretPigeon.setYaw(turretEncoderFieldCentricAngle.asRotations)
         }
 
     }
