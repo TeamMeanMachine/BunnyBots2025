@@ -133,7 +133,7 @@ object Vision : SubsystemBase() {
                         rawLimelightPose.translation + turretToRobotFieldCentric,
                         Drive.heading
                     ),
-                    inputs.aprilTagTimestamp, VecBuilder.fill(0.0000001, 0.0000001, 1000000000.0)
+                    inputs.aprilTagTimestamp, VecBuilder.fill(0.001, 0.001, 100.0)
                 )
             } catch (ex: Exception) {
                 println("Vision update died $ex")
