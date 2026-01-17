@@ -28,10 +28,11 @@ object Vision : SubsystemBase() {
     val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 1.0 }
     val inputs = VisionIO.VisionIOInputs()
 
+    @get:AutoLogOutput(key = "Vision/Pose")
     var pose: Pose2d = Pose2d()
 
     val poseEstimator = SwerveDrivePoseEstimator(Drive.kinematics, Drive.heading, Drive.modulePositions, Drive.pose, Drive.QUEST_STD_DEVS,
-        VecBuilder.fill(0.01, 0.01, Double.MAX_VALUE))
+        VecBuilder.fill(0.01, 0.01, 10.0))
 
     const val TURRET_TO_ROBOT_IN = 7.39
 
@@ -104,7 +105,7 @@ object Vision : SubsystemBase() {
 
             LoopLogger.record("Calculated aimError2d")
 
-            Logger.recordOutput("Vision/RobotPos", Pose2d(
+            Logger.recordOutput("Vision/LimelightCalculatedRobotPose", Pose2d(
                 rawLimelightPose.translation + Translation2d(
                     TURRET_TO_ROBOT_IN.inches,
                     0.0.inches
@@ -128,12 +129,13 @@ object Vision : SubsystemBase() {
                     )
                 }
 
+
                 poseEstimator.addVisionMeasurement(
                     Pose2d(
                         rawLimelightPose.translation + turretToRobotFieldCentric,
                         Drive.heading
                     ),
-                    inputs.aprilTagTimestamp, VecBuilder.fill(0.001, 0.001, 100.0)
+                    inputs.aprilTagTimestamp, VecBuilder.fill(0.01, 0.01, 10.0)
                 )
             } catch (ex: Exception) {
                 println("Vision update died $ex")
@@ -177,8 +179,6 @@ object Vision : SubsystemBase() {
         }
 
         LoopLogger.record("Updated num tag history")
-
-        Logger.recordOutput("Vision/PoseEstimatorPose", pose)
 
 //        if (Robot.isDisabled) {
 //            io.disabledGyroReset()

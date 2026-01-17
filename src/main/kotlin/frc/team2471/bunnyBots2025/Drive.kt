@@ -12,10 +12,10 @@ import edu.wpi.first.math.Matrix
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform2d
 import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.interpolation.InterpolatingTreeMap
 import edu.wpi.first.math.interpolation.Interpolator
 import edu.wpi.first.math.interpolation.InverseInterpolator
 import edu.wpi.first.math.kinematics.ChassisSpeeds
@@ -24,10 +24,7 @@ import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.wpilibj.Timer
 import gg.questnav.questnav.QuestNav
 import org.littletonrobotics.junction.Logger
-import org.opencv.core.Mat
 import org.team2471.frc.lib.control.LoopLogger
-import org.team2471.frc.lib.ctre.PhoenixUtil
-import org.team2471.frc.lib.localization.PoseLocalizer
 import org.team2471.frc.lib.math.cube
 import org.team2471.frc.lib.math.square
 import org.team2471.frc.lib.swerve.SwerveDriveSubsystem
@@ -35,12 +32,14 @@ import org.team2471.frc.lib.units.asMetersPerSecondPerSecond
 import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.inches
-import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.math.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.units.inchesPerSecond
+import org.team2471.frc.lib.units.metersPerSecondPerSecond
+import org.team2471.frc.lib.units.perSecond
+import org.team2471.frc.lib.util.demoSpeed
 import org.team2471.frc.lib.util.isBlueAlliance
 import org.team2471.frc.lib.util.isReal
 import org.team2471.frc.lib.util.isRedAlliance
-import org.team2471.frc.lib.vision.Fiducial
-import org.team2471.frc.lib.vision.QuixVisionCamera
 
 
 object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerConstants.moduleConfigs) {
@@ -61,10 +60,10 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
 //            println("resting heading to ${value.degrees}")
             resetRotation(value)
             if (resetQuestTranslation) {
-                quest.setPose(Pose2d(tempQuestPose.translation, value + robotToQuestTransformMeters.rotation))
+                quest.setPose(Pose3d(Pose2d(tempQuestPose.translation, value + robotToQuestTransformMeters.rotation)))
                 resetQuestTranslation = false
             } else {
-                quest.setPose(Pose2d(questPose.transformBy(robotToQuestTransformMeters).translation, value + robotToQuestTransformMeters.rotation))
+                quest.setPose(Pose3d(Pose2d(questPose.transformBy(robotToQuestTransformMeters).translation, value + robotToQuestTransformMeters.rotation)))
             }
         }
 
@@ -92,9 +91,9 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
     private var prevTranslation = Translation2d()
 
     // Drive Feedback controllers
-    override val autoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 2.0, 0.5.inches, 1.0.degrees)
-    val fastAutoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 5.0, 0.5.inches, 1.0.degrees)
-    val slowAutoPilot = createAPObject(Double.POSITIVE_INFINITY, 100.0, 0.5, 0.25.inches, 1.0.degrees)
+    override val autoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 2.0.metersPerSecondPerSecond.perSecond, 0.5.inches, 1.0.degrees)
+    val fastAutoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 5.0.metersPerSecondPerSecond.perSecond, 0.5.inches, 1.0.degrees)
+    val slowAutoPilot = createAPObject(Double.POSITIVE_INFINITY.inchesPerSecond, 100.0.metersPerSecondPerSecond, 0.5.metersPerSecondPerSecond.perSecond, 0.25.inches, 1.0.degrees)
 
     override val pathXController = PIDController(7.0, 0.0, 0.0)
     override val pathYController = PIDController(7.0, 0.0, 0.0)
@@ -106,6 +105,8 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
     override val driveAtAnglePIDController = PhoenixPIDController(7.7, 0.0, 0.072)
 
     override val isDisabledSupplier: () -> Boolean = { Robot.isDisabled }
+
+    override val choreoPathsStartOnRed: Boolean = false // false=made on the blue side, true=made on the red side
 
     init {
         println("inside Drive init")
@@ -150,7 +151,7 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
         if (questConnected) {
             if (isReal) {
                 quest.allUnreadPoseFrames.forEach {
-                    val pose = it.questPose.transformBy(robotToQuestTransformMeters.inverse())
+                    val pose = it.questPose3d.toPose2d().transformBy(robotToQuestTransformMeters.inverse())
                     val ctreTimestamp = Utils.fpgaToCurrentTime(it.dataTimestamp)
 
                     Logger.recordOutput("Drive/Quest/DataTimestamp", it.dataTimestamp)
@@ -167,6 +168,7 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
         }
 
         Vision.pose = Vision.poseEstimator.updateWithTime(Timer.getFPGATimestamp(),heading, modulePositions)
+
 
         LoopLogger.record("b4 Drive piodc")
         super.periodic() // Must call this

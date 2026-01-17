@@ -25,7 +25,6 @@ import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
 import org.team2471.frc.lib.util.RobotMode
-import org.team2471.frc.lib.util.isSim
 import org.team2471.frc.lib.util.robotMode
 import java.net.NetworkInterface
 import kotlin.collections.iterator
@@ -55,7 +54,7 @@ object Robot : LoggedRobot() {
     var isAutonomous = false
         private set
     @get:JvmName("RobotIsDisabled")
-    var isDisabled = false
+    var isDisabled = true
         private set
     @get:JvmName("RobotIsAutonomousEnabled")
     var isAutonomousEnabled = false
@@ -110,9 +109,10 @@ object Robot : LoggedRobot() {
         // Call all subsystems, make sure their init's run
         allSubsystems.forEach { println("activating subsystem ${it.name}") }
         println("FieldManager thinks the field is ${FieldManager.fieldDimensions.asFeet} feet big")
-        println("We see ${Autonomous.paths.size} paths and they are made on the ${if (Autonomous.isPathsRed) "red" else "blue"} side.")
+        println("We see ${Autonomous.paths.size} paths and they are made on the ${if (Drive.choreoPathsStartOnRed) "red" else "blue"} side.")
 
         GlobalScope.launch {
+            // Attempt to clear out small occasional loop overruns when periodically calling DriverStation.isEnabled()
             while (true) {
                 isEnabled = DriverStation.isEnabled()
                 isDisabled = !isEnabled
@@ -168,7 +168,6 @@ object Robot : LoggedRobot() {
 
     /** This function is called periodically when disabled.  */
     override fun disabledPeriodic() {
-        Autonomous.flipPathsIfAllianceChange()
         Autonomous.updateSelectedAuto()
         Intake.deployMotor.setControl(MotionMagicDutyCycle(Intake.deployMotor.position.valueAsDouble))
         Intake.intakeState = Intake.IntakeState.HOLDING
@@ -179,7 +178,6 @@ object Robot : LoggedRobot() {
     override fun autonomousInit() {
         enabledTimer.restart()
         println("Autonomous init $timeSinceEnabled")
-        if (isSim) Autonomous.flipPathsIfAllianceChange() // Only needed in sim
         Autonomous.setDrivePositionToAutoStartPose()
         println("scheduling auto command $timeSinceEnabled")
         (Autonomous.autonomousCommand ?: Commands.runOnce({ println("THE AUTONOMOUS COMMAND IS NULL") })).schedule()

@@ -2,6 +2,9 @@
 
 package frc.team2471.bunnyBots2025
 
+import com.ctre.phoenix6.CANBus
+import org.team2471.frc.lib.util.isSim
+
 object Sparks {
 }
 
@@ -20,9 +23,9 @@ object Falcons {
     const val FRONT_LEFT_STEER = 10
 
     const val BACK_RIGHT_DRIVE = 22
-    const val BACK_RIGHT_STEER = 15
+    val BACK_RIGHT_STEER = if (isSim) 40 else 15
 
-    const val BACK_LEFT_DRIVE = 18
+    val BACK_LEFT_DRIVE = if (isSim) 41 else 18
     const val BACK_LEFT_STEER = 11
 
     const val TURRET_0 = 17
@@ -63,11 +66,12 @@ object ServoPort {
 }
 
 object CANivores {
-    const val TURRET_CAN = "Kenivore"
+    val TURRET_CAN = CANBus("Kenivore")
 }
 
 object CANSensors {
     const val PIGEON = 2
+    const val TURRET_PIGEON = 40
 
     const val CANDI = 30
 

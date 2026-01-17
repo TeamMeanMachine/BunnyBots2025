@@ -5,13 +5,12 @@ import com.ctre.phoenix6.controls.PositionDutyCycle
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
 import com.ctre.phoenix6.hardware.CANdi
+import com.ctre.phoenix6.hardware.Pigeon2
 import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
-import com.ctre.phoenix6.signals.NeutralModeValue
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
 import edu.wpi.first.math.filter.LinearFilter
-import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.interpolation.InterpolatingTreeMap
 import edu.wpi.first.math.interpolation.Interpolator
@@ -28,10 +27,8 @@ import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.ctre.*
 import org.team2471.frc.lib.ctre.loggedTalonFX.LoggedTalonFX
 import org.team2471.frc.lib.units.*
-import org.team2471.frc.lib.util.DynamicInterpolatingTreeMap
+import org.team2471.frc.lib.math.DynamicInterpolatingTreeMap
 import org.team2471.frc.lib.util.angleTo
-import java.lang.reflect.Field
-import kotlin.compareTo
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -55,10 +52,11 @@ object Turret : SubsystemBase("Turret") {
     private val pivotEncoderOffsetEntry = table.getEntry("Pivot Encoder Offset")
 
 
-    val turretMotor = LoggedTalonFX(Falcons.TURRET_0)
+    val turretMotor = LoggedTalonFX(Falcons.TURRET_0, CANivores.TURRET_CAN)
     val pivotMotor = TalonFX(Falcons.PIVOT, CANivores.TURRET_CAN)
     val candi = CANdi(CANSensors.CANDI, CANivores.TURRET_CAN)
     val pivotEncoder = CANcoder(CANCoders.PIVOT, CANivores.TURRET_CAN)
+    val turretPigeon = Pigeon2(CANSensors.TURRET_PIGEON, CANivores.TURRET_CAN)
 
 
     @get:AutoLogOutput(key = "Turret/rawLampreyAngle")
@@ -142,14 +140,14 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretMotorAngle")
     val turretMotorAngle: Angle
-        get() = turretMotor.position.valueAsDouble.rotations
+        get() = -turretMotorFieldCentricAngle - Drive.heading.measure//turretMotor.position.valueAsDouble.rotations
 
     val turretMotorAngleHistory = DynamicInterpolatingTreeMap(
         InverseInterpolator.forDouble(), Interpolator.forDouble(), 75)
 
     @get:AutoLogOutput(key = "Turret/turretMotorFieldCentricAngle")
     val turretMotorFieldCentricAngle: Angle
-        get() = turretMotorAngle + Drive.heading.measure
+        get() = turretMotor.position.valueAsDouble.rotations//turretMotorAngle + Drive.heading.measure
 
     @get:AutoLogOutput(key = "Turret/pivotAngle")
     val pivotAngle: Angle
@@ -157,24 +155,26 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretFeedforward")
     val turretFeedforward: Double
-        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 10.0
+        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 0.0
 
     @get:AutoLogOutput(key = "Turret/turretSetpoint")
-    var turretSetpoint: Angle = turretMotorAngle
+    var turretSetpoint: Angle// = turretMotorAngle
+        get() = -turretFieldCentricSetpoint - Drive.heading.measure
         set(value) {
-            field = value.unWrap(turretMotorAngle)
+            turretFieldCentricSetpoint = Drive.heading.measure + value
+        }
+
+    @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
+    var turretFieldCentricSetpoint: Angle = turretMotorAngle
+//        get() = turretSetpoint + Drive.heading.measure
+        set(value) {
+            field = value.wrap()//.unWrap(turretMotorAngle)
             if ((turretMotorAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
                 turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
             }
-        }
 
-    @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
-    var turretFieldCentricSetpoint: Angle
-        get() = turretSetpoint + Drive.heading.measure
-        set(value) {
-            turretSetpoint = -Drive.heading.measure - value
         }
 
     @get:AutoLogOutput(key = "Turret/turretSetpointError")
@@ -227,8 +227,11 @@ object Turret : SubsystemBase("Turret") {
 
 
 
-            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
+//            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
             motionMagic(2.1, 12.2)
+            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, (10.0 / 233.0))
+
+            ClosedLoopGeneral.ContinuousWrap = true
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
@@ -256,10 +259,15 @@ object Turret : SubsystemBase("Turret") {
         // Are the motors running position control loops? Update the custom feedforward
         if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage || turretMotor.controlMode.value == ControlModeValue.PositionVoltage) {
 //            println("running ff")
-            turretSetpoint = turretSetpoint
+//            turretSetpoint = turretSetpoint
+//            turretFieldCentricSetpoint = turretFieldCentricSetpoint
         }
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
+        }
+
+        if (Robot.isDisabled) {
+//            turretPigeon.setYaw(turretEncoderFieldCentricAngle.asRotations)
         }
 
     }
@@ -302,25 +310,24 @@ object Turret : SubsystemBase("Turret") {
             turretSetpoint =
                 (turretMotorAngleHistory.get(Vision.inputs.aprilTagTimestamp)?.degrees ?: turretMotorAngle) - aimError
             ty = Vision.filteredTy
-            pivotSetpoint = shooterPitchCurve.get(ty).degrees
-            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
-            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
-        }
-//        } else if (Vision.hasSeenTag && Vision.pose.translation != Translation2d()) {
-//            val turretPos = Vision.pose.translation - Translation2d(
-//            TURRET_TO_ROBOT_IN.inches,
-//            0.0.inches
-//            ).rotateBy(Drive.heading.measure.asRotation2d)
-//
-//            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
-//
-//            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
-//        }
-
-        if (ty <= 50.0 && Vision.hasSeenTag) {
 //            pivotSetpoint = shooterPitchCurve.get(ty).degrees
 //            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
 //            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+        } else if (Vision.hasSeenTag && Vision.pose.translation != Translation2d()) {
+            val turretPos = Vision.pose.translation - Translation2d(
+            TURRET_TO_ROBOT_IN.inches,
+            0.0.inches
+            ).rotateBy(Drive.heading.measure.asRotation2d)
+
+            turretFieldCentricSetpoint = /*horizontalOffset.degrees*/(if (Vision.filteredTy <= 50.0) horizontalOffsetCurve.get(Vision.filteredTy).degrees else 0.0.degrees) - turretPos.angleTo(FieldManager.goalPose)
+
+            ty = Vision.distanceToTy(turretPos.getDistance(FieldManager.goalPose).meters).asDegrees
+        }
+
+        if (ty <= 50.0 && Vision.hasSeenTag) {
+            pivotSetpoint = shooterPitchCurve.get(ty).degrees
+            Shooter.leftRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
+            Shooter.rightRpmSetpoint = shooterRPMCurve.get(ty).coerceIn(19.0, 35.0)
         }
     }
 
