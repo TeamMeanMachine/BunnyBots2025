@@ -95,6 +95,7 @@ object OI: SubsystemBase("OI") {
                 println("zero gyro")
                 Drive.zeroGyro()
                 Vision.gyroReset()
+
             }.toCommand(Drive).ignoringDisable(true))
 
         // Reset Odometry Position
@@ -159,8 +160,9 @@ object OI: SubsystemBase("OI") {
 
         driverController.y().onTrue(Intake.home())
         driverController.x().onTrue(runOnce { Intake.stow() })
-        driverController.b().onTrue(runOnce { Intake.deploy() })
-        driverController.a().whileTrue(spinnySpit())
+        driverController.b().whileTrue(runCommand{ Turret.turretFieldCentricSetpoint = 1.0.degrees})
+        //driverController.b().onTrue(runOnce { Intake.deploy() })
+//        driverController.a().whileTrue(spinnySpit())
 //        driverController.y().onTrue(runOnce { Turret.pivotSetpoint = 40.0.degrees; println(Turret.pivotSetpoint) })
 //        driverController.b().onTrue(runOnce { Turret.pivotSetpoint = 25.0.degrees; println(Turret.pivotSetpoint) })
 //        driverController.a().onTrue(runOnce { Turret.pivotSetpoint = 5.0.degrees; println(Turret.pivotSetpoint) })

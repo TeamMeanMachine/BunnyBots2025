@@ -89,12 +89,12 @@ object Intake: SubsystemBase("Intake") {
 
     var frontIntakePowerSetpoint: Double = 0.0
         set(value) {
-            field = if (deployMotorPosition > deploy_pose - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
+            field = /*if (deployMotorPosition > deploy_pose - 5.0)*/ value.coerceIn(-1.0, 1.0) /*else 0.0*/
             frontMotor.setControl(DutyCycleOut(field))
         }
     var topCenteringPowerSetpoint: Double = 0.0
         set(value) {
-            field = if (deployMotorPosition > deploy_pose - 5.0) value.coerceIn(-1.0, 1.0) else 0.0
+            field = /*if (deployMotorPosition > deploy_pose - 5.0)*/ value.coerceIn(-1.0, 1.0)/* else 0.0*/
             centeringMotorTop.setControl(DutyCycleOut(field))
         }
 

@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.wpilibj2.command.Command
 import frc.team2471.bunnyBots2025.tests.joystickTest
 import frc.team2471.bunnyBots2025.tests.leftRightStaticFFTest
+import frc.team2471.bunnyBots2025.tests.printShooterCurves
 import frc.team2471.bunnyBots2025.tests.shooterSysIDLeft
 import frc.team2471.bunnyBots2025.tests.shooterSysIDRight
 import frc.team2471.bunnyBots2025.tests.slipCurrentTest
@@ -50,6 +51,7 @@ object Autonomous: Autonomi() {
         addOption("Zero Turret", zeroTurret())
         addOption("Shooter sysID Left", shooterSysIDLeft())
         addOption("Shooter sysID Right", shooterSysIDRight())
+        addOption("Print Shooter Curves", printShooterCurves())
     }
 
     /** Autonomous commands */

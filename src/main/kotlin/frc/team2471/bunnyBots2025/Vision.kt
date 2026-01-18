@@ -25,14 +25,14 @@ import org.team2471.frc.lib.vision.limelight.VisionIOLimelight
 import kotlin.math.sqrt
 
 object Vision : SubsystemBase() {
-    val io: VisionIO = VisionIOLimelight("limelight-turret") { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 1.0 }
+    val io: VisionIO = VisionIOLimelight("limelight-turret", ) { Turret.turretEncoderFieldCentricAngle }.apply { imuMode = 3; imuAssistAlpha = 0.1 }
     val inputs = VisionIO.VisionIOInputs()
 
     @get:AutoLogOutput(key = "Vision/Pose")
     var pose: Pose2d = Pose2d()
 
     val poseEstimator = SwerveDrivePoseEstimator(Drive.kinematics, Drive.heading, Drive.modulePositions, Drive.pose, Drive.QUEST_STD_DEVS,
-        VecBuilder.fill(0.01, 0.01, 10.0))
+        VecBuilder.fill(0.25, 0.25, 10.0))
 
     const val TURRET_TO_ROBOT_IN = 7.39
 
@@ -82,6 +82,7 @@ object Vision : SubsystemBase() {
 
     override fun periodic() {
         LoopLogger.record("Start of Vision periodic")
+        io.setImu()
         io.updateInputs(inputs)
 
         LoopLogger.record("Updated Vision Inputs")

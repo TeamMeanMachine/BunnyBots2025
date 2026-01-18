@@ -10,6 +10,7 @@ import org.team2471.frc.lib.units.asRotation2d
 import org.team2471.frc.lib.units.degrees
 import org.team2471.frc.lib.units.meters
 import org.team2471.frc.lib.units.UTranslation2d
+import org.team2471.frc.lib.units.inches
 import org.team2471.frc.lib.units.wrap
 import org.team2471.frc.lib.util.isRedAlliance
 
@@ -37,6 +38,9 @@ object FieldManager {
     val redGoalPose = (allAprilTags[4].pose.toPose2d().translation + allAprilTags[6].pose.toPose2d().translation) / 2.0
     val goalPose: Translation2d
         get() = if (isRedAlliance) redGoalPose else blueGoalPose
+
+    val rebuiltBlueGoalPose = Translation2d(4.63, 4.03)
+    val rebuiltGoalHeight = 65.0.inches
 
     init {
         println("FieldManager init. Field dimensions: $fieldDimensions. ${allAprilTags.size} tags.")
