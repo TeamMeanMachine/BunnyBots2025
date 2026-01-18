@@ -92,3 +92,16 @@ fun printShooterCurves(): Command = runOnce {
         println("put($dist, $speed)")
     }
 }
+
+fun printLampreyCurve(): Command = runCommand(Turret) {
+    println("Lamprey, Motor")
+    val increment = 5
+    for (i in 0..360/increment) {
+        val angle = (i * increment).toDouble()
+        Turret.turretSetpoint = angle.degrees
+
+        while (Turret.turretSetpointError > 0.5.degrees) {}
+
+        println("${Turret.unCorrectedLampreyAngle}, ${Turret.turretMotorAngle}")
+    }
+}
