@@ -22,9 +22,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.wpilibj.Timer
+import edu.wpi.first.wpilibj2.command.Command
+import frc.team2471.bunnyBots2025.OI.driverController
 import gg.questnav.questnav.QuestNav
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.LoopLogger
+import org.team2471.frc.lib.control.commands.runCommand
 import org.team2471.frc.lib.math.cube
 import org.team2471.frc.lib.math.square
 import org.team2471.frc.lib.swerve.SwerveDriveSubsystem
@@ -36,10 +39,13 @@ import org.team2471.frc.lib.math.DynamicInterpolatingTreeMap
 import org.team2471.frc.lib.units.inchesPerSecond
 import org.team2471.frc.lib.units.metersPerSecondPerSecond
 import org.team2471.frc.lib.units.perSecond
+import org.team2471.frc.lib.units.radians
 import org.team2471.frc.lib.util.demoSpeed
 import org.team2471.frc.lib.util.isBlueAlliance
 import org.team2471.frc.lib.util.isReal
 import org.team2471.frc.lib.util.isRedAlliance
+import kotlin.compareTo
+import kotlin.math.atan2
 
 
 object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerConstants.moduleConfigs) {
@@ -206,6 +212,19 @@ object Drive: SwerveDriveSubsystem(TunerConstants.drivetrainConstants, *TunerCon
         val omega = rawJoystickRotation.cube() * demoSpeed
 
         return ChassisSpeeds(joystickTranslation.x, joystickTranslation.y, omega)
+    }
+
+    fun snakeMode(): Command = runCommand(Drive) {
+        if (OI.rawDriveTranslation.norm > 0.1) {
+            driveAtAngle(
+                atan2(
+                    driverController.leftY,
+                    -driverController.leftX
+                ).radians.asRotation2d + Rotation2d(90.0.degrees)
+            )
+        } else {
+            driveVelocity(getChassisSpeedsFromJoystick().apply { omegaRadiansPerSecond = 0.0 })
+        }
     }
 
     fun resetOdometryToAbsolute() {

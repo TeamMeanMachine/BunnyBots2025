@@ -161,6 +161,7 @@ object OI: SubsystemBase("OI") {
         driverController.y().onTrue(Intake.home())
         driverController.x().onTrue(runOnce { Intake.stow() })
         driverController.b().whileTrue(runCommand{ Turret.turretFieldCentricSetpoint = 1.0.degrees})
+        driverController.a().toggleOnTrue(Drive.snakeMode())
         //driverController.b().onTrue(runOnce { Intake.deploy() })
 //        driverController.a().whileTrue(spinnySpit())
 //        driverController.y().onTrue(runOnce { Turret.pivotSetpoint = 40.0.degrees; println(Turret.pivotSetpoint) })

@@ -82,7 +82,7 @@ object Vision : SubsystemBase() {
 
     override fun periodic() {
         LoopLogger.record("Start of Vision periodic")
-        io.setImu()
+//        io.setImu()
         io.updateInputs(inputs)
 
         LoopLogger.record("Updated Vision Inputs")
