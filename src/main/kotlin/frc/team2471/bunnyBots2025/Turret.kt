@@ -172,12 +172,19 @@ object Turret : SubsystemBase("Turret") {
             turretFieldCentricSetpoint = (Drive.heading.measure + value).wrap()
         }
 
+    val TURRET_TOP_LIMIT = 210.0.degrees
+    val TURRET_BOTTOM_LIMIT = -210.0.degrees
+
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
             println("setting setpoint to ${value.asDegrees}")
-            field = value
+            field = if (value > TURRET_TOP_LIMIT || value < TURRET_BOTTOM_LIMIT) {
+                value.wrap()
+            } else {
+                value
+            }
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
@@ -246,9 +253,9 @@ object Turret : SubsystemBase("Turret") {
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
-        turretPigeon.applyConfiguration {
-            this
-        }
+//        turretPigeon.applyConfiguration {
+//            this
+//        }
 
         pivotEncoder.applyConfiguration {
             inverted(true)
@@ -281,7 +288,7 @@ object Turret : SubsystemBase("Turret") {
                         isOutsideRange = true
                         println("unwrapping turret setpoint. Turret setpoint is ${turretFieldCentricSetpoint.asDegrees}")
                     }
-                    println("is outside range!!! $turretFieldCentricSetpoint")
+                    println("is outside range!!! ${turretFieldCentricSetpoint.asDegrees}")
 //                    if (motorUnwrappedAngle.asDegrees > 210.0 && !isOutsideRange) {
 //                        turretFieldCentricSetpoint = turretFieldCentricSetpoint - 360.0.degrees
 //                        isOutsideRange = true
