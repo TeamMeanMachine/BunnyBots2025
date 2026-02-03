@@ -22,6 +22,8 @@ import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
 import frc.team2471.bunnyBots2025.Vision.TURRET_TO_ROBOT_IN
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.commands.runCommand
@@ -34,6 +36,7 @@ import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.sign
+import org.team2471.frc.lib.coroutines.periodic
 import kotlin.math.sin
 
 
@@ -173,7 +176,8 @@ object Turret : SubsystemBase("Turret") {
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
-            field = value.unWrap(turretMotorFieldCentricAngle)
+            println("setting setpoint to ${value.asDegrees}")
+            field = value
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
@@ -223,6 +227,8 @@ object Turret : SubsystemBase("Turret") {
 
         horizontalOffsetEntry.setDouble(0.0)
 
+//        turretMotor.setPosition(turretEncoderAngle)
+
         turretMotor.applyConfiguration {
             currentLimits(30.0, 40.0, 1.0)
             inverted(true)
@@ -234,11 +240,15 @@ object Turret : SubsystemBase("Turret") {
 
 //            Feedback.SensorToMechanismRatio = 1.0 / (10.0 / 233.0)
             motionMagic(2.1, 12.2)
-            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, -(10.0 / 58.0 / 234.0))
+            alternateFeedbackSensor(turretPigeon.deviceID, FeedbackSensorSourceValue.RemotePigeon2Yaw, (10.0 / 58.0 / 234.0))
 
-            ClosedLoopGeneral.ContinuousWrap = true
+            ClosedLoopGeneral.ContinuousWrap = false
         }
         turretMotor.addFollower(Falcons.TURRET_1)
+
+        turretPigeon.applyConfiguration {
+            this
+        }
 
         pivotEncoder.applyConfiguration {
             inverted(true)
@@ -258,6 +268,35 @@ object Turret : SubsystemBase("Turret") {
         turretMotor.setPosition(turretEncoderAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
         setTurretOffset()
+
+
+
+        GlobalScope.launch {
+            var isOutsideRange: Boolean = false
+            periodic {
+                val motorUnwrappedAngle = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
+                if (motorUnwrappedAngle.asDegrees > 210.0 || motorUnwrappedAngle.asDegrees < -210.0) {
+                    if (!isOutsideRange) {
+                        turretFieldCentricSetpoint = (turretFieldCentricSetpoint + 360.0.degrees * sign(motorUnwrappedAngle.asDegrees)).wrap()
+                        isOutsideRange = true
+                        println("unwrapping turret setpoint. Turret setpoint is ${turretFieldCentricSetpoint.asDegrees}")
+                    }
+                    println("is outside range!!! $turretFieldCentricSetpoint")
+//                    if (motorUnwrappedAngle.asDegrees > 210.0 && !isOutsideRange) {
+//                        turretFieldCentricSetpoint = turretFieldCentricSetpoint - 360.0.degrees
+//                        isOutsideRange = true
+//                        println("unwrapping turret setpoint to far positive. Turret setpoint is ${turretSetpoint.asDegrees}")
+//                    } else if (motorUnwrappedAngle.asDegrees < -210.0 && !isOutsideRange) {
+//                        turretFieldCentricSetpoint = turretFieldCentricSetpoint + 360.0.degrees
+//                        isOutsideRange = true
+//                        println("unwrapping turret setpoint to far negitive. Turret setpoint is ${turretSetpoint.asDegrees}")
+//                    }
+                } else {
+                    isOutsideRange = false
+                }
+
+            }
+        }
     }
 
     override fun periodic() {
@@ -288,7 +327,7 @@ object Turret : SubsystemBase("Turret") {
         if (joystickTranslation.norm > 0.25) {
             val wantedAngle = joystickTranslation.angle.measure
             Logger.recordOutput("Turret/wantedAngle", wantedAngle)
-            val setpointAngle = (wantedAngle.unWrap(turretMotorFieldCentricAngle))
+            val setpointAngle = (wantedAngle)
             Logger.recordOutput("Turret/joystickSetpointAngle", setpointAngle)
             turretFieldCentricSetpoint = setpointAngle
         }
