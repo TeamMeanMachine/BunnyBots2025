@@ -175,15 +175,21 @@ object Turret : SubsystemBase("Turret") {
     val TURRET_TOP_LIMIT = 210.0.degrees
     val TURRET_BOTTOM_LIMIT = -210.0.degrees
 
+    @get:AutoLogOutput(key = "Turret/turretMotorRotorAngle")
+    val turretMotorRotorAngle: Angle
+        get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
+
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
-            println("setting setpoint to ${value.asDegrees}")
-            field = if (value > TURRET_TOP_LIMIT || value < TURRET_BOTTOM_LIMIT) {
-                value.wrap()
+//            println("setting setpoint to ${value.asDegrees}")
+            val unwrappedValue = value.unWrap(field)
+            val robotCentricSetpointUnwrapped = unwrappedValue - Drive.heading.measure
+            field = if (robotCentricSetpointUnwrapped !in TURRET_BOTTOM_LIMIT..TURRET_TOP_LIMIT) {
+                unwrappedValue.wrap()
             } else {
-                value
+                unwrappedValue
             }
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
@@ -281,7 +287,7 @@ object Turret : SubsystemBase("Turret") {
         GlobalScope.launch {
             var isOutsideRange: Boolean = false
             periodic {
-                val motorUnwrappedAngle = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
+                val motorUnwrappedAngle = turretMotorRotorAngle
                 if (motorUnwrappedAngle.asDegrees > 210.0 || motorUnwrappedAngle.asDegrees < -210.0) {
                     if (!isOutsideRange) {
                         turretFieldCentricSetpoint = (turretFieldCentricSetpoint + 360.0.degrees * sign(motorUnwrappedAngle.asDegrees)).wrap()
@@ -289,15 +295,6 @@ object Turret : SubsystemBase("Turret") {
                         println("unwrapping turret setpoint. Turret setpoint is ${turretFieldCentricSetpoint.asDegrees}")
                     }
                     println("is outside range!!! ${turretFieldCentricSetpoint.asDegrees}")
-//                    if (motorUnwrappedAngle.asDegrees > 210.0 && !isOutsideRange) {
-//                        turretFieldCentricSetpoint = turretFieldCentricSetpoint - 360.0.degrees
-//                        isOutsideRange = true
-//                        println("unwrapping turret setpoint to far positive. Turret setpoint is ${turretSetpoint.asDegrees}")
-//                    } else if (motorUnwrappedAngle.asDegrees < -210.0 && !isOutsideRange) {
-//                        turretFieldCentricSetpoint = turretFieldCentricSetpoint + 360.0.degrees
-//                        isOutsideRange = true
-//                        println("unwrapping turret setpoint to far negitive. Turret setpoint is ${turretSetpoint.asDegrees}")
-//                    }
                 } else {
                     isOutsideRange = false
                 }
