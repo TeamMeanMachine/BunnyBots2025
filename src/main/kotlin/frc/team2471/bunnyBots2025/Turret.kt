@@ -184,13 +184,16 @@ object Turret : SubsystemBase("Turret") {
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
 //            println("setting setpoint to ${value.asDegrees}")
-            val unwrappedValue = value.unWrap(field)
-            val robotCentricSetpointUnwrapped = unwrappedValue - Drive.heading.measure
-            field = if (robotCentricSetpointUnwrapped !in TURRET_BOTTOM_LIMIT..TURRET_TOP_LIMIT) {
-                unwrappedValue.wrap()
+            val unwrappedValue = value.unWrap(turretMotorFieldCentricAngle)
+            val robotHeadingUnwrapped = Drive.headingAngleUnwrapped
+            field = if (unwrappedValue > TURRET_TOP_LIMIT + robotHeadingUnwrapped) {
+                unwrappedValue - 360.0.degrees
+            } else if (unwrappedValue < TURRET_BOTTOM_LIMIT + robotHeadingUnwrapped) {
+                unwrappedValue + 360.0.degrees
             } else {
                 unwrappedValue
             }
+
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
@@ -228,6 +231,8 @@ object Turret : SubsystemBase("Turret") {
 
     var pivotPeriodicFeedforward: Boolean = true
     var turretPeriodicFeedforward: Boolean = true
+
+    var tempHeadingResetAngle: Angle? = null
 
 
     init {
@@ -280,13 +285,15 @@ object Turret : SubsystemBase("Turret") {
 
         turretMotor.setPosition(turretEncoderAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
-        setTurretOffset()
+        setTurretOffset(Drive.heading.measure)
 
 
 
         GlobalScope.launch {
-            var isOutsideRange: Boolean = false
+            var isOutsideRange = false
             periodic {
+
+
                 val motorUnwrappedAngle = turretMotorRotorAngle
                 if (motorUnwrappedAngle.asDegrees > 210.0 || motorUnwrappedAngle.asDegrees < -210.0) {
                     if (!isOutsideRange) {
@@ -299,6 +306,21 @@ object Turret : SubsystemBase("Turret") {
                     isOutsideRange = false
                 }
 
+            }
+        }
+        GlobalScope.launch {
+            periodic {
+                val tempResetAngle = tempHeadingResetAngle
+                if (tempResetAngle != null) {
+                    tempHeadingResetAngle = null
+                    Drive.headingAngleUnwrapped = tempResetAngle
+                    GlobalScope.launch {
+                        println("setting turret pigeon yaw")
+                        turretPigeon.setYaw(turretEncoderFieldCentricAngle)
+                        println("finished setting turret pigeon yaw")
+                    }
+                }
+                Drive.headingAngleUnwrapped = Drive.heading.measure.unWrap(Drive.headingAngleUnwrapped)
             }
         }
     }
@@ -321,8 +343,8 @@ object Turret : SubsystemBase("Turret") {
 
     }
 
-    fun setTurretOffset() {
-        turretPigeon.setYaw(turretEncoderFieldCentricAngle)
+    fun setTurretOffset(robotHeading: Angle) {
+        tempHeadingResetAngle = robotHeading
     }
 
 
