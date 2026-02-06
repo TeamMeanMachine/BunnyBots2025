@@ -86,7 +86,7 @@ object OI: SubsystemBase("OI") {
         // Default command, normal field-relative drive
         Drive.defaultCommand = Drive.joystickDrive()
 
-        Turret.defaultCommand = Turret.aimAtGoal()
+        Turret.defaultCommand = Turret.aimAt90()//Turret.aimAtGoal()
 
 
 

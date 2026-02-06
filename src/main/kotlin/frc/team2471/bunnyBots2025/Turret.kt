@@ -163,7 +163,7 @@ object Turret : SubsystemBase("Turret") {
 
     @get:AutoLogOutput(key = "Turret/turretFeedforward")
     val turretFeedforward: Double
-        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 0.0
+        get() = -Drive.speeds.omegaRadiansPerSecond.radians.asRotations * 2.5
 
     @get:AutoLogOutput(key = "Turret/turretSetpoint")
     var turretSetpoint: Angle// = turretMotorAngle
@@ -175,9 +175,11 @@ object Turret : SubsystemBase("Turret") {
     val TURRET_TOP_LIMIT = 210.0.degrees
     val TURRET_BOTTOM_LIMIT = -210.0.degrees
 
+    var turretMotorRotorPositionOffset: Angle = 0.0.degrees
+
     @get:AutoLogOutput(key = "Turret/turretMotorRotorAngle")
     val turretMotorRotorAngle: Angle
-        get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
+        get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0 - turretMotorRotorPositionOffset
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
@@ -197,7 +199,7 @@ object Turret : SubsystemBase("Turret") {
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
-                turretMotor.setControl(MotionMagicVoltage(field.asRotations).withFeedForward(turretFeedforward))
+                turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             }
 
         }
@@ -252,7 +254,7 @@ object Turret : SubsystemBase("Turret") {
             inverted(true)
             coastMode()
             s(0.13, StaticFeedforwardSignValue.UseClosedLoopSign)
-            p(50.0)
+            p(30.0)
 
 
 
@@ -286,26 +288,15 @@ object Turret : SubsystemBase("Turret") {
         turretMotor.setPosition(turretEncoderAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
         setTurretOffset(Drive.heading.measure)
+        turretMotorRotorPositionOffset = turretEncoderAngle - turretMotorRotorAngle
 
 
 
         GlobalScope.launch {
-            var isOutsideRange = false
             periodic {
-
-
-                val motorUnwrappedAngle = turretMotorRotorAngle
-                if (motorUnwrappedAngle.asDegrees > 210.0 || motorUnwrappedAngle.asDegrees < -210.0) {
-                    if (!isOutsideRange) {
-                        turretFieldCentricSetpoint = (turretFieldCentricSetpoint + 360.0.degrees * sign(motorUnwrappedAngle.asDegrees)).wrap()
-                        isOutsideRange = true
-                        println("unwrapping turret setpoint. Turret setpoint is ${turretFieldCentricSetpoint.asDegrees}")
-                    }
-                    println("is outside range!!! ${turretFieldCentricSetpoint.asDegrees}")
-                } else {
-                    isOutsideRange = false
+                if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+                    turretFieldCentricSetpoint = turretFieldCentricSetpoint
                 }
-
             }
         }
         GlobalScope.launch {
@@ -416,6 +407,10 @@ object Turret : SubsystemBase("Turret") {
             Shooter.rightRpmSetpoint = Shooter.rpsCurve.get(distToGoal)
 
         }
+    }
+
+    fun  aimAt90(): Command = runCommand(this) {
+        turretFieldCentricSetpoint = 90.0.degrees
     }
 
 
