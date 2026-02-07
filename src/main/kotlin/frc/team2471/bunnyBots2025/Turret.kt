@@ -1,6 +1,5 @@
 package frc.team2471.bunnyBots2025
 
-import com.ctre.phoenix6.controls.MotionMagicVoltage
 import com.ctre.phoenix6.controls.PositionDutyCycle
 import com.ctre.phoenix6.controls.PositionVoltage
 import com.ctre.phoenix6.hardware.CANcoder
@@ -35,7 +34,6 @@ import org.team2471.frc.lib.util.angleTo
 import kotlin.math.IEEErem
 import kotlin.math.abs
 import kotlin.math.absoluteValue
-import kotlin.math.sign
 import org.team2471.frc.lib.coroutines.periodic
 import kotlin.math.sin
 
@@ -175,25 +173,33 @@ object Turret : SubsystemBase("Turret") {
     val TURRET_TOP_LIMIT = 210.0.degrees
     val TURRET_BOTTOM_LIMIT = -210.0.degrees
 
+    val rawTurretMotorRotorAngle: Angle
+        get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
+
+    @get:AutoLogOutput(key = "Turret/turretMotorRotorAngleOffset")
     var turretMotorRotorPositionOffset: Angle = 0.0.degrees
 
     @get:AutoLogOutput(key = "Turret/turretMotorRotorAngle")
     val turretMotorRotorAngle: Angle
-        get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0 - turretMotorRotorPositionOffset
+        get() = rawTurretMotorRotorAngle + turretMotorRotorPositionOffset
+
+    var turretWrapping = false
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
 //            println("setting setpoint to ${value.asDegrees}")
-            val unwrappedValue = value.unWrap(turretMotorFieldCentricAngle)
-            val robotHeadingUnwrapped = Drive.headingAngleUnwrapped
-            field = if (unwrappedValue > TURRET_TOP_LIMIT + robotHeadingUnwrapped) {
-                unwrappedValue - 360.0.degrees
-            } else if (unwrappedValue < TURRET_BOTTOM_LIMIT + robotHeadingUnwrapped) {
-                unwrappedValue + 360.0.degrees
+            val turretMotorFieldCentricAngle = this.turretMotorFieldCentricAngle
+            val fieldCentricSetpoint = value.unWrap(turretMotorFieldCentricAngle)
+            val positionError = fieldCentricSetpoint - turretMotorFieldCentricAngle
+            val robotCentricSetpoint = turretMotorRotorAngle + positionError
+            field = if (robotCentricSetpoint > TURRET_TOP_LIMIT) {
+                fieldCentricSetpoint - 360.0.degrees
+            } else if (robotCentricSetpoint < TURRET_BOTTOM_LIMIT) {
+                fieldCentricSetpoint + 360.0.degrees
             } else {
-                unwrappedValue
+                fieldCentricSetpoint
             }
 
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
@@ -266,10 +272,6 @@ object Turret : SubsystemBase("Turret") {
         }
         turretMotor.addFollower(Falcons.TURRET_1)
 
-//        turretPigeon.applyConfiguration {
-//            this
-//        }
-
         pivotEncoder.applyConfiguration {
             inverted(true)
             magnetSensorOffset(0.342041015625)
@@ -288,7 +290,6 @@ object Turret : SubsystemBase("Turret") {
         turretMotor.setPosition(turretEncoderAngle)
         pivotMotor.setPosition(pivotEncoderAngle)
         setTurretOffset(Drive.heading.measure)
-        turretMotorRotorPositionOffset = turretEncoderAngle - turretMotorRotorAngle
 
 
 
@@ -318,17 +319,13 @@ object Turret : SubsystemBase("Turret") {
 
     override fun periodic() {
         turretMotorAngleHistory.put(Timer.getFPGATimestamp(), turretMotorAngle.asDegrees)
-        // Are the motors running position control loops? Update the custom feedforward
-        if (turretMotor.controlMode.value == ControlModeValue.MotionMagicVoltage || turretMotor.controlMode.value == ControlModeValue.PositionVoltage) {
-//            println("running ff")
-//            turretSetpoint = turretSetpoint
-//            turretFieldCentricSetpoint = turretFieldCentricSetpoint
-        }
+
         if (pivotMotor.controlMode.value == ControlModeValue.PositionDutyCycle) {
             pivotSetpoint = pivotSetpoint
         }
 
         if (Robot.isDisabled) {
+            turretMotorRotorPositionOffset = turretEncoderAngle - rawTurretMotorRotorAngle
 //            turretPigeon.setYaw(turretEncoderFieldCentricAngle.asRotations)
         }
 
