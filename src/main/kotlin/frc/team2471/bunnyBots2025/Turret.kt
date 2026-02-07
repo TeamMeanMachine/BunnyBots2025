@@ -183,7 +183,8 @@ object Turret : SubsystemBase("Turret") {
     val turretMotorRotorAngle: Angle
         get() = rawTurretMotorRotorAngle + turretMotorRotorPositionOffset
 
-    var turretWrapping = false
+    @get:AutoLogOutput(key = "Turret/turretWrappingDirection")
+    private var turretWrappingDirection: Int = 0
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
     var turretFieldCentricSetpoint: Angle = turretMotorAngle
@@ -194,13 +195,22 @@ object Turret : SubsystemBase("Turret") {
             val fieldCentricSetpoint = value.unWrap(turretMotorFieldCentricAngle)
             val positionError = fieldCentricSetpoint - turretMotorFieldCentricAngle
             val robotCentricSetpoint = turretMotorRotorAngle + positionError
-            field = if (robotCentricSetpoint > TURRET_TOP_LIMIT) {
-                fieldCentricSetpoint - 360.0.degrees
-            } else if (robotCentricSetpoint < TURRET_BOTTOM_LIMIT) {
-                fieldCentricSetpoint + 360.0.degrees
+
+            if (turretWrappingDirection == 0) {
+                if (robotCentricSetpoint > TURRET_TOP_LIMIT) {
+                    turretWrappingDirection = -1
+//                    fieldCentricSetpoint - 360.0.degrees
+                } else if (robotCentricSetpoint < TURRET_BOTTOM_LIMIT) {
+                    turretWrappingDirection = 1
+//                    fieldCentricSetpoint + 360.0.degrees
+                }
             } else {
-                fieldCentricSetpoint
+                if (positionError.absoluteValue() < 180.0.degrees) {
+                    turretWrappingDirection = 0
+                }
             }
+
+            field = fieldCentricSetpoint + (360.0 * turretWrappingDirection).degrees
 
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
