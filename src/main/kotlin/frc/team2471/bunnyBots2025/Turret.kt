@@ -341,6 +341,10 @@ object Turret : SubsystemBase("Turret") {
                 }
                 Drive.headingAngleUnwrapped = Drive.heading.measure.unWrap(Drive.headingAngleUnwrapped)
                 turretEncoderAngleUnwrapped = turretEncoderAngle.unWrap(turretEncoderAngleUnwrapped)
+
+                if (!turretPigeon.isConnected) {
+                    println("TURRET PIGEON DISCONNECTED!!!!")
+                }
             }
         }
 
