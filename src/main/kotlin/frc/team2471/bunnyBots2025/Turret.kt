@@ -9,6 +9,7 @@ import com.ctre.phoenix6.hardware.TalonFX
 import com.ctre.phoenix6.signals.ControlModeValue
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue
+import edu.wpi.first.math.filter.Debouncer
 import edu.wpi.first.math.filter.LinearFilter
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Translation2d
@@ -20,9 +21,11 @@ import edu.wpi.first.units.measure.Angle
 import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.SubsystemBase
+import frc.team2471.bunnyBots2025.Drive.heading
 import frc.team2471.bunnyBots2025.Vision.TURRET_TO_ROBOT_IN
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.littletonrobotics.junction.AutoLog
 import org.littletonrobotics.junction.AutoLogOutput
 import org.littletonrobotics.junction.Logger
 import org.team2471.frc.lib.control.commands.runCommand
@@ -136,6 +139,10 @@ object Turret : SubsystemBase("Turret") {
     val turretEncoderAngle: Angle
         get() = (unCorrectedLampreyAngle - lampreyAlignmentOffset).wrap()
 
+    @get:AutoLogOutput(key = "Turret/turretEncoderAngleUnwrapped")
+    var turretEncoderAngleUnwrapped: Angle = turretEncoderAngle
+        get() = turretEncoderAngle.unWrap(field)
+
     @get:AutoLogOutput(key = "Turret/turretEncoderFieldCentricAngle")
     val turretEncoderFieldCentricAngle: Angle
         get() = (turretEncoderAngle + Drive.heading.measure).wrap()
@@ -170,8 +177,8 @@ object Turret : SubsystemBase("Turret") {
             turretFieldCentricSetpoint = (Drive.heading.measure + value).wrap()
         }
 
-    val TURRET_TOP_LIMIT = 210.0.degrees
-    val TURRET_BOTTOM_LIMIT = -210.0.degrees
+    val TURRET_TOP_LIMIT = 300.0.degrees
+    val TURRET_BOTTOM_LIMIT = -300.0.degrees
 
     val rawTurretMotorRotorAngle: Angle
         get() = turretMotor.rotorPosition.valueAsDouble.rotations / 24.0
@@ -183,41 +190,46 @@ object Turret : SubsystemBase("Turret") {
     val turretMotorRotorAngle: Angle
         get() = rawTurretMotorRotorAngle + turretMotorRotorPositionOffset
 
-    @get:AutoLogOutput(key = "Turret/turretWrappingDirection")
-    private var turretWrappingDirection: Int = 0
+    @get:AutoLogOutput(key = "Turret/isTurretWrapping")
+    var isTurretWrapping = false
 
     @get:AutoLogOutput(key = "Turret/turretFieldCentricSetpoint")
-    var turretFieldCentricSetpoint: Angle = turretMotorAngle
+    var turretFieldCentricSetpoint: Angle = turretMotorFieldCentricAngle
 //        get() = turretSetpoint + Drive.heading.measure
         set(value) {
 //            println("setting setpoint to ${value.asDegrees}")
             val turretMotorFieldCentricAngle = this.turretMotorFieldCentricAngle
-            val fieldCentricSetpoint = value.unWrap(turretMotorFieldCentricAngle)
+            val fieldCentricSetpoint = if (isTurretWrapping) {
+                value.unWrap(field)
+            } else {
+                value.unWrap(turretMotorFieldCentricAngle)
+            }
             val positionError = fieldCentricSetpoint - turretMotorFieldCentricAngle
             val robotCentricSetpoint = turretMotorRotorAngle + positionError
 
-            if (turretWrappingDirection == 0) {
-                if (robotCentricSetpoint > TURRET_TOP_LIMIT) {
-                    turretWrappingDirection = -1
-//                    fieldCentricSetpoint - 360.0.degrees
-                } else if (robotCentricSetpoint < TURRET_BOTTOM_LIMIT) {
-                    turretWrappingDirection = 1
-//                    fieldCentricSetpoint + 360.0.degrees
-                }
+
+
+            field = if (robotCentricSetpoint > TURRET_TOP_LIMIT && !isTurretWrapping) {
+                fieldCentricSetpoint - 360.0.degrees
+            } else if (robotCentricSetpoint < TURRET_BOTTOM_LIMIT && !isTurretWrapping) {
+                fieldCentricSetpoint + 360.0.degrees
             } else {
-                if (positionError.absoluteValue() < 180.0.degrees) {
-                    turretWrappingDirection = 0
-                }
+                fieldCentricSetpoint
             }
 
-            field = fieldCentricSetpoint + (360.0 * turretWrappingDirection).degrees
+            if ((field - turretMotorFieldCentricAngle).absoluteValue() > 180.0.degrees) {
+                isTurretWrapping = true
+            } else {
+                isTurretWrapping = false
+            }
+
+//            field = fieldCentricSetpoint + (360.0 * turretWrappingDirection).degrees
 
             if ((turretMotorFieldCentricAngle - field).asDegrees.absoluteValue < 90.0) {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             } else {
                 turretMotor.setControl(PositionVoltage(field.asRotations).withFeedForward(turretFeedforward))
             }
-
         }
 
     @get:AutoLogOutput(key = "Turret/turretSetpointError")
@@ -305,9 +317,14 @@ object Turret : SubsystemBase("Turret") {
 
         GlobalScope.launch {
             periodic {
-                if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
-                    turretFieldCentricSetpoint = turretFieldCentricSetpoint
+                if (Robot.isDisabled) {
+                    turretFieldCentricSetpoint = turretMotorFieldCentricAngle
+                } else {
+                    if (turretMotor.controlMode.value in PhoenixUtil.positionControlModes) {
+                        turretFieldCentricSetpoint = turretFieldCentricSetpoint
+                    }
                 }
+
             }
         }
         GlobalScope.launch {
@@ -323,8 +340,12 @@ object Turret : SubsystemBase("Turret") {
                     }
                 }
                 Drive.headingAngleUnwrapped = Drive.heading.measure.unWrap(Drive.headingAngleUnwrapped)
+                turretEncoderAngleUnwrapped = turretEncoderAngle.unWrap(turretEncoderAngleUnwrapped)
             }
         }
+
+        turretMotorRotorPositionOffset = turretEncoderAngleUnwrapped - rawTurretMotorRotorAngle
+
     }
 
     override fun periodic() {
@@ -335,7 +356,6 @@ object Turret : SubsystemBase("Turret") {
         }
 
         if (Robot.isDisabled) {
-            turretMotorRotorPositionOffset = turretEncoderAngle - rawTurretMotorRotorAngle
 //            turretPigeon.setYaw(turretEncoderFieldCentricAngle.asRotations)
         }
 
